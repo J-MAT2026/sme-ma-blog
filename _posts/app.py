@@ -1,7 +1,17 @@
 import datetime
 import os
+import feedparser
 
 today = datetime.date.today()
+
+feed = feedparser.parse("https://prtimes.jp/topics/keywords/M%26A/rss")
+
+articles = []
+
+for entry in feed.entries[:5]:
+    articles.append(f"- [{entry.title}]({entry.link})")
+
+article_text = "\n".join(articles)
 
 content = f"""
 ---
@@ -9,18 +19,15 @@ title: "今日のM&Aニュース {today}"
 date: {today}
 ---
 
-本日のM&Aニュースまとめです。
+## 今日のM&Aニュース
 
-・中小企業M&A  
-・事業承継  
-・買収ニュース
+{article_text}
 
-自動生成記事です。
 """
 
 os.makedirs("out", exist_ok=True)
 
-filename = f"out/{today}-daily-ma.md"
+filename = f"out/{today}-ma-news.md"
 
 with open(filename,"w") as f:
     f.write(content)
