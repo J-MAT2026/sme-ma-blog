@@ -1,6 +1,8 @@
 import feedparser
 import datetime
 import os
+import requests
+from bs4 import BeautifulSoup
 
 keywords = [
 
@@ -32,6 +34,7 @@ keywords = [
 feeds = []
 
 for word in keywords:
+
     feeds.append(
         f"https://news.google.com/rss/search?q={word}&hl=ja&gl=JP&ceid=JP:ja"
     )
@@ -47,6 +50,7 @@ feeds += [
 articles = []
 seen = set()
 
+# RSSニュース取得
 for url in feeds:
 
     feed = feedparser.parse(url)
@@ -64,6 +68,52 @@ for url in feeds:
                 f"- [{title}]({link})"
             )
 
+# ------------------------
+# 企業NEWSスクレイピング
+# ------------------------
+
+company_sites = [
+
+"https://www.fc.alsok.co.jp/news/",
+"https://www.nihon-ma.co.jp/news/",
+"https://www.strike.co.jp/news/",
+"https://batonz.jp/news/"
+
+]
+
+for site in company_sites:
+
+    try:
+
+        res = requests.get(site,timeout=10)
+        soup = BeautifulSoup(res.text,"html.parser")
+
+        links = soup.find_all("a")
+
+        for a in links:
+
+            title = a.get_text(strip=True)
+            href = a.get("href")
+
+            if not title or not href:
+                continue
+
+            if any(k in title for k in keywords):
+
+                if href.startswith("/"):
+                    href = site + href
+
+                if title not in seen:
+
+                    seen.add(title)
+
+                    articles.append(
+                        f"- [{title}]({href})"
+                    )
+
+    except:
+        pass
+
 today = datetime.date.today()
 
 content = f"""---
@@ -73,7 +123,7 @@ date: {today}
 
 ## 今日のM&Aニュース
 
-{chr(10).join(articles[:80])}
+{chr(10).join(articles[:120])}
 """
 
 os.makedirs("_posts", exist_ok=True)
