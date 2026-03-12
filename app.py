@@ -4,7 +4,7 @@ import feedparser
 
 today = datetime.date.today()
 
-feed = feedparser.parse("https://prtimes.jp/topics/keywords/M%26A/rss")
+feed = feedparser.parse("https://news.google.com/rss/search?q=M%26A&hl=ja&gl=JP&ceid=JP:ja")
 
 articles = []
 
