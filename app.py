@@ -4,13 +4,15 @@ import os
 import requests
 from bs4 import BeautifulSoup
 
-# ----------------
-# M&A確定ワード
-# ----------------
+# ======================
+# M&A確定キーワード
+# ======================
 
 ma_keywords = [
 
 "買収",
+"企業買収",
+"会社買収",
 "子会社化",
 "完全子会社化",
 "株式取得",
@@ -27,9 +29,9 @@ ma_keywords = [
 
 ]
 
-# ----------------
+# ======================
 # 除外サイト
-# ----------------
+# ======================
 
 ng_sites = [
 
@@ -38,13 +40,15 @@ ng_sites = [
 "wantedly",
 "qiita",
 "zenn.dev",
-"speakerdeck"
+"speakerdeck",
+"blog",
+"medium.com"
 
 ]
 
-# ----------------
-# RSS
-# ----------------
+# ======================
+# RSSソース
+# ======================
 
 feeds = [
 
@@ -54,16 +58,17 @@ feeds = [
 "https://news.google.com/rss/search?q=事業承継&hl=ja&gl=JP&ceid=JP:ja",
 
 "https://prtimes.jp/topics/keywords/M%26A/rss",
-"https://prtimes.jp/topics/keywords/事業承継/rss"
+"https://prtimes.jp/topics/keywords/事業承継/rss",
+"https://prtimes.jp/topics/keywords/資本提携/rss"
 
 ]
 
 articles = []
 seen = set()
 
-# ----------------
+# ======================
 # RSS取得
-# ----------------
+# ======================
 
 for url in feeds:
 
@@ -74,9 +79,11 @@ for url in feeds:
         title = entry.title
         link = entry.link
 
+        # ノイズサイト除外
         if any(site in link for site in ng_sites):
             continue
 
+        # M&Aワード確認
         if not any(k in title for k in ma_keywords):
             continue
 
@@ -84,14 +91,15 @@ for url in feeds:
 
             seen.add(title)
 
-            articles.append(f"- [{title}]({link})")
+            articles.append(
+                f"- [{title}]({link})"
+            )
 
+# ======================
+# 企業NEWSスクレイピング
+# ======================
 
-# ----------------
-# 企業ニュース取得
-# ----------------
-
-company_sites = [
+company_news_sites = [
 
 "https://www.fc.alsok.co.jp/news/",
 "https://www.nihon-ma.co.jp/news/",
@@ -100,12 +108,11 @@ company_sites = [
 
 ]
 
-for site in company_sites:
+for site in company_news_sites:
 
     try:
 
         html = requests.get(site,timeout=10).text
-
         soup = BeautifulSoup(html,"html.parser")
 
         links = soup.find_all("a")
@@ -122,17 +129,23 @@ for site in company_sites:
                 continue
 
             if href.startswith("/"):
-                href = site + href
+                href = site.rstrip("/") + href
 
             if title not in seen:
 
                 seen.add(title)
 
-                articles.append(f"- [{title}]({href})")
+                articles.append(
+                    f"- [{title}]({href})"
+                )
 
     except:
         pass
 
+
+# ======================
+# 記事生成
+# ======================
 
 today = datetime.date.today()
 
@@ -146,7 +159,7 @@ date: {today}
 {chr(10).join(articles[:100])}
 """
 
-os.makedirs("_posts",exist_ok=True)
+os.makedirs("_posts", exist_ok=True)
 
 filename = f"_posts/{today}-ma-news.md"
 
