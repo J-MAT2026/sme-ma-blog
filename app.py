@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # ======================
-# M&A確定キーワード
+# M&Aキーワード
 # ======================
 
 ma_keywords = [
@@ -41,7 +41,6 @@ ng_sites = [
 "qiita",
 "zenn.dev",
 "speakerdeck",
-"blog",
 "medium.com"
 
 ]
@@ -74,17 +73,20 @@ for url in feeds:
 
     feed = feedparser.parse(url)
 
-    for entry in feed.entries[:5]:
+    for entry in feed.entries[:20]:
 
         title = entry.title
         link = entry.link
+        summary = entry.summary if "summary" in entry else ""
+
+        text = title + summary
+
+        # M&Aキーワード判定
+        if not any(k in text for k in ma_keywords):
+            continue
 
         # ノイズサイト除外
         if any(site in link for site in ng_sites):
-            continue
-
-        # M&Aワード確認
-        if not any(k in title for k in ma_keywords):
             continue
 
         if title not in seen:
@@ -94,6 +96,7 @@ for url in feeds:
             articles.append(
                 f"- [{title}]({link})"
             )
+
 
 # ======================
 # 企業NEWSスクレイピング
