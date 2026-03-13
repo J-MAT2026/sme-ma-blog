@@ -1,10 +1,12 @@
 import feedparser
 import datetime
 import os
+import requests
+from bs4 import BeautifulSoup
 
-# -------------------------
+# ----------------
 # M&A確定ワード
-# -------------------------
+# ----------------
 
 ma_keywords = [
 
@@ -19,38 +21,37 @@ ma_keywords = [
 "新設合併",
 "事業承継",
 "資本提携",
-"業務提携"
+"業務提携",
+"グループ入り",
+"傘下入り"
 
 ]
 
-# -------------------------
-# 除外ワード
-# -------------------------
+# ----------------
+# 除外サイト
+# ----------------
 
-ng_words = [
+ng_sites = [
 
-"研究",
-"考察",
-"解説",
-"入門",
-"戦略",
-"まとめ",
-"勉強",
-"ブログ",
-"note",
-"コラム"
+"note.com",
+"linkedin.com",
+"wantedly",
+"qiita",
+"zenn.dev",
+"speakerdeck"
 
 ]
 
-# -------------------------
+# ----------------
 # RSS
-# -------------------------
+# ----------------
 
 feeds = [
 
-"https://news.google.com/rss/search?q=M%26A&hl=ja&gl=JP&ceid=JP:ja",
 "https://news.google.com/rss/search?q=企業買収&hl=ja&gl=JP&ceid=JP:ja",
 "https://news.google.com/rss/search?q=事業譲渡&hl=ja&gl=JP&ceid=JP:ja",
+"https://news.google.com/rss/search?q=子会社化&hl=ja&gl=JP&ceid=JP:ja",
+"https://news.google.com/rss/search?q=事業承継&hl=ja&gl=JP&ceid=JP:ja",
 
 "https://prtimes.jp/topics/keywords/M%26A/rss",
 "https://prtimes.jp/topics/keywords/事業承継/rss"
@@ -59,6 +60,10 @@ feeds = [
 
 articles = []
 seen = set()
+
+# ----------------
+# RSS取得
+# ----------------
 
 for url in feeds:
 
@@ -69,11 +74,9 @@ for url in feeds:
         title = entry.title
         link = entry.link
 
-        # NGワード除外
-        if any(w in title for w in ng_words):
+        if any(site in link for site in ng_sites):
             continue
 
-        # M&Aワード必須
         if not any(k in title for k in ma_keywords):
             continue
 
@@ -81,9 +84,55 @@ for url in feeds:
 
             seen.add(title)
 
-            articles.append(
-                f"- [{title}]({link})"
-            )
+            articles.append(f"- [{title}]({link})")
+
+
+# ----------------
+# 企業ニュース取得
+# ----------------
+
+company_sites = [
+
+"https://www.fc.alsok.co.jp/news/",
+"https://www.nihon-ma.co.jp/news/",
+"https://www.strike.co.jp/news/",
+"https://batonz.jp/news/"
+
+]
+
+for site in company_sites:
+
+    try:
+
+        html = requests.get(site,timeout=10).text
+
+        soup = BeautifulSoup(html,"html.parser")
+
+        links = soup.find_all("a")
+
+        for a in links:
+
+            title = a.get_text(strip=True)
+            href = a.get("href")
+
+            if not title or not href:
+                continue
+
+            if not any(k in title for k in ma_keywords):
+                continue
+
+            if href.startswith("/"):
+                href = site + href
+
+            if title not in seen:
+
+                seen.add(title)
+
+                articles.append(f"- [{title}]({href})")
+
+    except:
+        pass
+
 
 today = datetime.date.today()
 
@@ -94,10 +143,10 @@ date: {today}
 
 ## 今日のM&Aニュース
 
-{chr(10).join(articles[:60])}
+{chr(10).join(articles[:100])}
 """
 
-os.makedirs("_posts", exist_ok=True)
+os.makedirs("_posts",exist_ok=True)
 
 filename = f"_posts/{today}-ma-news.md"
 
