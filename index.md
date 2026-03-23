@@ -33,7 +33,14 @@ title: J-MAT | 日本最大級M&Aニュース
 
 {% for post in site.posts offset:5 limit:20 %}
 <div class="card">
-  <a href="{{ post.url }}">{{ post.title }}</a>
-  <div class="meta">{{ post.date | date: "%Y-%m-%d" }}</div>
+  <a href="{{ post.url }}"><strong>{{ post.title }}</strong></a>
+  
+  <p>
+    {{ post.excerpt | strip_html | truncate: 80 }}
+  </p>
+  
+  <div class="meta">
+    {{ post.date | date: "%Y-%m-%d" }}
+  </div>
 </div>
 {% endfor %}
