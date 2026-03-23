@@ -1,32 +1,18 @@
 ---
 layout: default
-title: J-MAT | Japan M&A Times
+title: J-MAT | 日本最大級M&Aニュース
 ---
 
-<div style="text-align:center; padding:40px 20px;">
-  <img src="/assets/logo.png" width="200">
-  <h1>J-MAT</h1>
-  <p>Japan M&A Times</p>
-  <p>日本最大級の中小企業M&Aニュース</p>
-</div>
+# 🔥 今日の注目M&A
 
----
-
-## 🔥 今日の注目M&A
-
-{% for post in site.posts limit:3 %}
-- **[{{ post.title }}]({{ post.url }})**
-  - {{ post.summary }}
+{% for post in site.posts limit:1 %}
+## [{{ post.title }}]({{ post.url }})
 {% endfor %}
 
 ---
 
-## 📰 最新ニュース
+# 📰 最新ニュース
 
-{% for post in site.posts limit:30 %}
-### [{{ post.title }}]({{ post.url }})
-
-{{ post.summary }}
-
----
+{% for post in site.posts limit:10 %}
+- [{{ post.title }}]({{ post.url }})
 {% endfor %}
