@@ -5,13 +5,13 @@ title: J-MAT | 日本最大級M&Aニュース
 
 # 🔥 今日の注目M&A
 
-{% assign first = site.posts.first %}
-
+{% for post in site.posts limit:3 %}
 <div class="hero">
-  <h2><a href="{{ first.url }}">{{ first.title }}</a></h2>
-  <p class="meta">{{ first.date | date: "%Y-%m-%d" }}</p>
+  <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
+  <p>{{ post.excerpt }}</p>
+  <div class="meta">{{ post.date | date: "%Y-%m-%d" }}</div>
 </div>
-
+{% endfor %}
 ---
 
 # 📰 速報
