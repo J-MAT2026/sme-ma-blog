@@ -1,3 +1,7 @@
+<p style="text-align:center; color:#666;">
+日本最大級の中小企業M&Aニュースサイト。<br>
+買収・事業承継・資本提携の最新情報を毎日配信。
+</p>
 ---
 layout: default
 title: J-MAT | 日本最大級M&Aニュース
