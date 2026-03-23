@@ -5,81 +5,52 @@ import requests
 from bs4 import BeautifulSoup
 
 # ======================
-# M&Aキーワード（強化版）
+# キーワード
 # ======================
 
 ma_keywords = [
-"買収","企業買収","会社買収",
-"子会社化","完全子会社化",
-"株式取得","持分取得","経営権取得",
-"事業譲渡","会社分割",
-"吸収合併","新設合併",
-"事業承継",
-"資本提携","業務提携","資本業務提携",
-"出資","増資",
-"グループ入り","傘下入り"
+"買収","企業買収","子会社化","株式取得",
+"事業譲渡","合併","資本提携","出資"
 ]
-
-# ======================
-# NGワード
-# ======================
 
 ng_keywords = [
-"採用","募集","イベント","セミナー",
-"インタビュー","キャンペーン"
+"採用","募集","イベント","セミナー"
 ]
 
-# ======================
-# RSS（最初に全部書く）
-# ======================
-
 feeds = [
-
 "https://news.google.com/rss/search?q=企業買収&hl=ja&gl=JP&ceid=JP:ja",
-"https://news.google.com/rss/search?q=事業譲渡&hl=ja&gl=JP&ceid=JP:ja",
-"https://news.google.com/rss/search?q=子会社化&hl=ja&gl=JP&ceid=JP:ja",
-"https://news.google.com/rss/search?q=株式取得&hl=ja&gl=JP&ceid=JP:ja",
-"https://news.google.com/rss/search?q=資本提携&hl=ja&gl=JP&ceid=JP:ja",
-"https://news.google.com/rss/search?q=業務提携&hl=ja&gl=JP&ceid=JP:ja",
-"https://news.google.com/rss/search?q=出資&hl=ja&gl=JP&ceid=JP:ja",
-
-"https://prtimes.jp/topics/keywords/M%26A/rss",
-"https://prtimes.jp/topics/keywords/事業承継/rss",
-"https://prtimes.jp/topics/keywords/資本提携/rss"
-
+"https://prtimes.jp/topics/keywords/M%26A/rss"
 ]
 
 articles = []
 seen = set()
 
 # ======================
-# 要約
+# 要約（改良）
 # ======================
 
 def make_summary(text):
-    return (text[:80] + "...") if text else ""
+    if not text:
+        return ""
+    return text.replace("\n", "")[:120] + "..."
 
 # ======================
 # RSS取得
 # ======================
 
 for url in feeds:
-
     feed = feedparser.parse(url)
 
     for entry in feed.entries[:20]:
-
         title = entry.title
         link = entry.link
         summary = entry.summary if hasattr(entry, "summary") else ""
 
-        text = (title + summary).lower()
+        text = (title + summary)
 
-        # M&A判定
-        if not any(k.lower() in text for k in ma_keywords):
+        if not any(k in text for k in ma_keywords):
             continue
 
-        # ノイズ除去
         if any(k in text for k in ng_keywords):
             continue
 
@@ -93,56 +64,13 @@ for url in feeds:
             })
 
 # ======================
-# 企業サイト
+# 記事少ない対策
 # ======================
 
-company_sites = [
-"https://www.fc.alsok.co.jp/news/",
-"https://www.nihon-ma.co.jp/news/",
-"https://www.strike.co.jp/news/",
-"https://batonz.jp/news/"
-]
-
-for site in company_sites:
-
-    try:
-        html = requests.get(site, timeout=10).text
-        soup = BeautifulSoup(html, "html.parser")
-
-        for a in soup.find_all("a"):
-
-            title = a.get_text(strip=True)
-            href = a.get("href")
-
-            if not title or not href:
-                continue
-
-            if not any(k in title for k in ma_keywords):
-                continue
-
-            if href.startswith("/"):
-                href = site.rstrip("/") + href
-
-            if title not in seen:
-                seen.add(title)
-
-                articles.append({
-                    "title": title,
-                    "link": href,
-                    "summary": "企業公式リリース"
-                })
-
-    except:
-        pass
-
-# ======================
-# 記事0対策（重要）
-# ======================
-
-if len(articles) < 10:
+if len(articles) < 5:
     for url in feeds:
         feed = feedparser.parse(url)
-        for entry in feed.entries[:10]:
+        for entry in feed.entries[:5]:
             articles.append({
                 "title": entry.title,
                 "link": entry.link,
@@ -150,22 +78,39 @@ if len(articles) < 10:
             })
 
 # ======================
-# 出力
+# タイトル生成（重要）
 # ======================
 
 today = datetime.date.today()
 
+main_title = f"M&Aニュースまとめ（{today}）主要案件を解説"
+
+# 👉 ここが超重要
+page_summary = "本日のM&Aニュースを厳選してまとめ。買収・資本提携など重要トピックを短時間で把握できます。"
+
+# ======================
+# 本文生成（メディア風）
+# ======================
+
+body = "## 今日の注目M&Aニュース\n\n"
+
+for a in articles[:10]:
+    body += f"### {a['title']}\n"
+    body += f"{a['summary']}\n\n"
+    body += f"[記事を読む]({a['link']})\n\n---\n\n"
+
+# ======================
+# 出力（修正版）
+# ======================
+
 content = f"""---
-title: "今日のM&Aニュース {today}"
+title: "{main_title}"
 date: {today}
+summary: "{page_summary}"
 ---
 
-## 今日のM&Aニュース
-
+{body}
 """
-
-for a in articles[:100]:
-    content += f"- [{a['title']}]({a['link']})\n  - {a['summary']}\n\n"
 
 os.makedirs("_posts", exist_ok=True)
 
