@@ -61,8 +61,10 @@ for url in feeds:
         text = title + summary
 
         # M&A判定
-        if not any(k in text for k in ma_keywords):
-            continue
+text = (entry.title + entry.summary).lower()
+
+if not any(k.lower() in text for k in ma_keywords):
+    continue
 
         # ノイズ除去
         if any(k in text for k in ng_keywords):
