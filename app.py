@@ -81,7 +81,9 @@ if len(articles) < 5:
 # タイトル生成（重要）
 # ======================
 
-today = datetime.date.today()
+now = datetime.datetime.now()
+date_str = now.strftime("%Y-%m-%d %H:%M:%S +0900")
+today_str = now.strftime("%Y-%m-%d")
 
 main_title = f"M&Aニュースまとめ（{today}）主要案件を解説"
 
@@ -105,7 +107,7 @@ for a in articles[:10]:
 
 content = f"""---
 title: "{main_title}"
-date: {today}
+date: {date_str}
 summary: "{page_summary}"
 ---
 
@@ -114,7 +116,7 @@ summary: "{page_summary}"
 
 os.makedirs("_posts", exist_ok=True)
 
-filename = f"_posts/{today}-ma-news.md"
+filename = f"_posts/{today_str}-ma-news.md"
 
 with open(filename, "w", encoding="utf-8") as f:
     f.write(content)
