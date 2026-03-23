@@ -140,7 +140,15 @@ for a in articles[:50]:
     content += f"- [{a['title']}]({a['link']})\n  - {a['summary']}\n\n"
 
 os.makedirs("_posts", exist_ok=True)
+feeds += [
 
+"https://news.google.com/rss/search?q=株式取得&hl=ja&gl=JP&ceid=JP:ja",
+"https://news.google.com/rss/search?q=資本提携&hl=ja&gl=JP&ceid=JP:ja",
+"https://news.google.com/rss/search?q=業務提携&hl=ja&gl=JP&ceid=JP:ja",
+"https://news.google.com/rss/search?q=出資&hl=ja&gl=JP&ceid=JP:ja",
+"https://news.google.com/rss/search?q=事業売却&hl=ja&gl=JP:ja"
+
+]
 filename = f"_posts/{today}-ma-news.md"
 
 with open(filename, "w", encoding="utf-8") as f:
