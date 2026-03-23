@@ -7,3 +7,4 @@ plugins:
   - jekyll-feed
 
 markdown: kramdown
+logo: /assets/logo.png
