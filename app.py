@@ -5,65 +5,44 @@ import requests
 from bs4 import BeautifulSoup
 
 # ======================
-# M&Aキーワード
+# M&A確定キーワード
 # ======================
 
 ma_keywords = [
-
-"買収",
-"企業買収",
-"会社買収",
-"子会社化",
-"完全子会社化",
-"株式取得",
-"持分取得",
-"事業譲渡",
-"会社分割",
-"吸収合併",
-"新設合併",
+"買収","企業買収","会社買収",
+"子会社化","完全子会社化",
+"株式取得","持分取得",
+"事業譲渡","会社分割",
+"吸収合併","新設合併",
 "事業承継",
-"資本提携",
-"業務提携",
-"グループ入り",
-"傘下入り"
-
+"資本提携","業務提携",
+"グループ入り","傘下入り"
 ]
 
 # ======================
-# 除外サイト
+# NGワード（ノイズ除去）
 # ======================
 
-ng_sites = [
-
-"note.com",
-"linkedin.com",
-"wantedly",
-"qiita",
-"zenn.dev",
-"speakerdeck",
-"medium.com"
-
+ng_keywords = [
+"採用","募集","イベント","セミナー",
+"インタビュー","お知らせ","キャンペーン"
 ]
-
-# ======================
-# RSSソース
-# ======================
 
 feeds = [
-
 "https://news.google.com/rss/search?q=企業買収&hl=ja&gl=JP&ceid=JP:ja",
 "https://news.google.com/rss/search?q=事業譲渡&hl=ja&gl=JP&ceid=JP:ja",
-"https://news.google.com/rss/search?q=子会社化&hl=ja&gl=JP&ceid=JP:ja",
-"https://news.google.com/rss/search?q=事業承継&hl=ja&gl=JP&ceid=JP:ja",
-
-"https://prtimes.jp/topics/keywords/M%26A/rss",
-"https://prtimes.jp/topics/keywords/事業承継/rss",
-"https://prtimes.jp/topics/keywords/資本提携/rss"
-
+"https://prtimes.jp/topics/keywords/M%26A/rss"
 ]
 
 articles = []
 seen = set()
+
+# ======================
+# 要約生成
+# ======================
+
+def make_summary(text):
+    return text[:80] + "..."
 
 # ======================
 # RSS取得
@@ -73,7 +52,7 @@ for url in feeds:
 
     feed = feedparser.parse(url)
 
-    for entry in feed.entries[:20]:
+    for entry in feed.entries[:10]:
 
         title = entry.title
         link = entry.link
@@ -81,46 +60,39 @@ for url in feeds:
 
         text = title + summary
 
-        # M&Aキーワード判定
+        # M&A判定
         if not any(k in text for k in ma_keywords):
             continue
 
-        # ノイズサイト除外
-        if any(site in link for site in ng_sites):
+        # ノイズ除去
+        if any(k in text for k in ng_keywords):
             continue
 
         if title not in seen:
-
             seen.add(title)
 
-            articles.append(
-                f"- [{title}]({link})"
-            )
-
+            articles.append({
+                "title": title,
+                "link": link,
+                "summary": make_summary(summary)
+            })
 
 # ======================
-# 企業NEWSスクレイピング
+# 企業サイトスクレイピング
 # ======================
 
-company_news_sites = [
-
+company_sites = [
 "https://www.fc.alsok.co.jp/news/",
-"https://www.nihon-ma.co.jp/news/",
-"https://www.strike.co.jp/news/",
-"https://batonz.jp/news/"
-
+"https://www.nihon-ma.co.jp/news/"
 ]
 
-for site in company_news_sites:
+for site in company_sites:
 
     try:
+        html = requests.get(site, timeout=10).text
+        soup = BeautifulSoup(html, "html.parser")
 
-        html = requests.get(site,timeout=10).text
-        soup = BeautifulSoup(html,"html.parser")
-
-        links = soup.find_all("a")
-
-        for a in links:
+        for a in soup.find_all("a"):
 
             title = a.get_text(strip=True)
             href = a.get("href")
@@ -135,16 +107,16 @@ for site in company_news_sites:
                 href = site.rstrip("/") + href
 
             if title not in seen:
-
                 seen.add(title)
 
-                articles.append(
-                    f"- [{title}]({href})"
-                )
+                articles.append({
+                    "title": title,
+                    "link": href,
+                    "summary": "企業公式リリース"
+                })
 
     except:
         pass
-
 
 # ======================
 # 記事生成
@@ -155,16 +127,19 @@ today = datetime.date.today()
 content = f"""---
 title: "今日のM&Aニュース {today}"
 date: {today}
+summary: "本日のM&Aニュースまとめ"
 ---
 
 ## 今日のM&Aニュース
 
-{chr(10).join(articles[:100])}
 """
+
+for a in articles[:50]:
+    content += f"- [{a['title']}]({a['link']})\n  - {a['summary']}\n\n"
 
 os.makedirs("_posts", exist_ok=True)
 
 filename = f"_posts/{today}-ma-news.md"
 
-with open(filename,"w",encoding="utf-8") as f:
+with open(filename, "w", encoding="utf-8") as f:
     f.write(content)
