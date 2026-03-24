@@ -1,12 +1,22 @@
 ---
 layout: default
 ---
-
-<div class="hero">
-  <h1>{{ page.title }}</h1>
-  <p class="meta">{{ page.date | date: "%Y-%m-%d" }}</p>
+<div class="post-header">
+  <a href="/" class="back-link">← ニュース一覧に戻る</a>
+  <div class="post-tag">M&Aニュース</div>
+  <h1 class="post-heading">{{ page.title }}</h1>
+  <p class="post-meta">
+    📅 {{ page.date | date: "%Y年%m月%d日" }}
+    {% if page.summary %}
+    <span class="post-meta-summary">{{ page.summary }}</span>
+    {% endif %}
+  </p>
 </div>
 
-<div class="section">
+<div class="post-content">
   {{ content }}
+</div>
+
+<div class="post-footer">
+  <a href="/" class="back-btn">← ニュース一覧に戻る</a>
 </div>
