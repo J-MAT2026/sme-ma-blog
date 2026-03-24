@@ -13,8 +13,8 @@
     :root {
       --black:        #0a0a0a;
       --black-soft:   #111111;
-      --black-card:   #161616;
-      --black-hover:  #1e1e1e;
+      --black-card:   #1c1c1c;
+      --black-hover:  #262626;
       --silver:       #c8c8c8;
       --silver-dim:   #888888;
       --silver-faint: #333333;
@@ -28,7 +28,7 @@
 
     body {
       font-family: 'Noto Sans JP', sans-serif;
-      background: var(--black);
+      background: #0f0f0f;
       color: var(--white);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
@@ -68,7 +68,7 @@
     .header-inner {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 16px 32px;
+      padding: 14px 32px;
       display: flex;
       align-items: center;
       gap: 20px;
@@ -79,21 +79,21 @@
       text-decoration: none;
     }
     .logo-img {
-      height: 42px;
+      height: 64px;
       object-fit: contain;
       filter: brightness(1.1);
     }
     .header-divider {
       width: 1px;
-      height: 30px;
+      height: 44px;
       background: var(--border-bright);
-      margin: 0 16px;
+      margin: 0 20px;
     }
     .header-tagline {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 12px;
-      letter-spacing: 3px;
-      color: var(--silver-dim);
+      font-size: 20px;
+      letter-spacing: 5px;
+      color: var(--silver);
       text-transform: uppercase;
     }
     .header-right {
@@ -212,18 +212,18 @@
     }
     .post-title {
       font-family: 'Noto Serif JP', serif;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
       line-height: 1.75;
       margin-bottom: 12px;
-      color: var(--white);
+      color: #ffffff;
     }
     .post-summary {
       font-size: 12px;
-      color: var(--silver-dim);
+      color: #aaaaaa;
       line-height: 1.9;
       margin-bottom: 20px;
-      font-weight: 300;
+      font-weight: 400;
     }
     .post-footer-row {
       display: flex;
@@ -232,7 +232,7 @@
     }
     .post-date {
       font-size: 10px;
-      color: var(--silver-faint);
+      color: #666666;
       letter-spacing: 2px;
     }
     .post-arrow {
