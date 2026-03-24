@@ -1,35 +1,35 @@
-name: Daily Update
+name: Daily M&A Update
 
 on:
   schedule:
-    - cron: '10 0 * * *'
-  workflow_dispatch:
+    - cron: '10 0 * * *'  # JST 09:10 毎日実行
+  workflow_dispatch:        # 手動実行も可能
 
 jobs:
   run:
     runs-on: ubuntu-latest
-
     permissions:
       contents: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-      - run: python app.py
+      - name: Run app.py
+        run: python app.py
 
-      - name: Commit
+      - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          mkdir -p _posts
-          cp out/*.md _posts/ || true
-          git add .
-          git commit -m "auto update" || echo "no changes"
+          git add _posts/
+          git diff --cached --quiet || git commit -m "auto update: $(date '+%Y-%m-%d')"
           git push
