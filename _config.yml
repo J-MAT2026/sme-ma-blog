@@ -1,3 +1,6 @@
+baseurl: "/sme-ma-blog"
+url: "https://j-mat2026.github.io"
+
 markdown: kramdown
 
 collections:
