@@ -10,6 +10,7 @@ title: J-MAT | 日本最大級M&Aニュース
   {% for post in site.posts limit:6 %}
   <div class="post-card">
     <a href="{{ post.url }}">
+      <div class="post-tag">M&Aニュース</div>
       <div class="post-title">{{ post.title }}</div>
       <div class="post-summary">
         {% if post.summary %}
