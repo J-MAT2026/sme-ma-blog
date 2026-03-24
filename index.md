@@ -20,7 +20,7 @@ title: J-MAT | 日本最大級M&Aニュース
         <a href="{{ f.link }}" target="_blank" rel="noopener">
           <div class="featured-img-wrap">
             <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
-                 onerror="this.src='https://source.unsplash.com/800x450/?business,meeting&sig=1'">
+                 onerror="this.src='https://picsum.photos/seed/10/800/450'">
             <div class="featured-cat">{{ f.category }}</div>
             <div class="featured-rank">#1</div>
           </div>
@@ -39,7 +39,7 @@ title: J-MAT | 日本最大級M&Aニュース
             <a href="{{ f.link }}" target="_blank" rel="noopener">
               <div class="featured-img-wrap">
                 <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
-                     onerror="this.src='https://source.unsplash.com/800x450/?business&sig={{ f.rank }}'">
+                     onerror="this.src='https://picsum.photos/seed/{{ f.rank }}0/800/450'">
                 <div class="featured-cat">{{ f.category }}</div>
                 <div class="featured-rank">#{{ f.rank }}</div>
               </div>
