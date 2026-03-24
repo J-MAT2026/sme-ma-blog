@@ -1,6 +1,7 @@
 import feedparser
 import datetime
 import os
+import re
 import requests
 from bs4 import BeautifulSoup
 
@@ -32,16 +33,93 @@ seen = set()
 def make_summary(text):
     if not text:
         return ""
-    # HTMLタグを除去
     try:
         soup = BeautifulSoup(text, "html.parser")
         clean = soup.get_text()
     except Exception:
         clean = text
     clean = clean.replace("\n", " ").strip()
-    if len(clean) > 120:
-        return clean[:120] + "..."
+    if len(clean) > 150:
+        return clean[:150] + "..."
     return clean
+
+# ======================
+# 業種カテゴリ判定
+# ======================
+def detect_category(text):
+    categories = {
+        "IT・テクノロジー": ["IT", "テック", "DX", "AI", "ソフトウェア", "SaaS", "クラウド", "システム", "デジタル", "アプリ", "ネット"],
+        "金融・保険": ["銀行", "保険", "証券", "金融", "ファンド", "投資", "リース", "信託", "再保険"],
+        "医療・ヘルスケア": ["医療", "製薬", "病院", "ヘルスケア", "バイオ", "医薬", "クリニック"],
+        "製造・素材": ["製造", "メーカー", "素材", "化学", "鉄鋼", "部品", "工場"],
+        "不動産・建設": ["不動産", "建設", "住宅", "マンション", "ゼネコン", "土地"],
+        "食品・飲食": ["食品", "飲食", "レストラン", "カフェ", "食料", "外食", "農業", "牛角", "大戸屋"],
+        "小売・流通": ["小売", "流通", "EC", "物流", "商社", "卸売", "スーパー"],
+        "エネルギー": ["エネルギー", "電力", "ガス", "再生可能", "太陽光", "石油"],
+        "メディア・エンタメ": ["メディア", "エンタメ", "出版", "放送", "ゲーム", "映画", "音楽"],
+    }
+    for category, keywords in categories.items():
+        if any(k in text for k in keywords):
+            return category
+    return "M&A総合"
+
+# ======================
+# 専門家風タイトル生成
+# ======================
+def make_professional_title(article, rank):
+    title = article["title"]
+    category = article["category"]
+
+    amount_match = re.search(r'(\d+(?:,\d+)*(?:\.\d+)?(?:億|兆|万)?円)', title)
+    amount = amount_match.group(1) if amount_match else ""
+
+    if "TOB" in title:
+        action = "TOBによる完全子会社化"
+    elif "MBO" in title:
+        action = "経営陣によるMBO"
+    elif "合併" in title:
+        action = "合併統合"
+    elif "資本提携" in title:
+        action = "戦略的資本提携"
+    elif "子会社化" in title or "完全子会社" in title:
+        action = "完全子会社化"
+    elif "出資" in title:
+        action = "資本参加・出資"
+    else:
+        action = "M&A"
+
+    prefixes = [
+        f"【独自分析】{category}セクターの再編加速：",
+        f"【注目案件】{action}が示す業界構造変化：",
+        f"【市場動向】{category}におけるM&A戦略の深層：",
+        f"【詳報】{action}の背景と今後の展望：",
+        f"【速報】{category}の大型{action}：",
+    ]
+
+    prefix = prefixes[(rank - 1) % len(prefixes)]
+    short = title.split("　")[0].split(" ")[0][:25]
+    if amount:
+        return f"{prefix}{short}（{amount}規模）"
+    return f"{prefix}{short}"
+
+# ======================
+# 画像URL（Unsplash）
+# ======================
+def make_image_url(category, seed):
+    mapping = {
+        "IT・テクノロジー": "technology,business",
+        "金融・保険": "finance,business",
+        "医療・ヘルスケア": "healthcare,medical",
+        "製造・素材": "manufacturing,factory",
+        "不動産・建設": "building,real-estate",
+        "食品・飲食": "food,restaurant",
+        "小売・流通": "retail,logistics",
+        "エネルギー": "energy,industry",
+        "メディア・エンタメ": "media,entertainment",
+        "M&A総合": "business,meeting",
+    }
+    kw = mapping.get(category, "business,meeting")
+    return f"https://source.unsplash.com/800x450/?{kw}&sig={seed}"
 
 # ======================
 # RSS取得
@@ -65,19 +143,18 @@ for url in feeds:
                 continue
             if title and title not in seen:
                 seen.add(title)
+                category = detect_category(text)
                 articles.append({
                     "title": title,
                     "link": link,
-                    "summary": make_summary(summary)
+                    "summary": make_summary(summary),
+                    "category": category,
                 })
     except Exception as e:
         print(f"  エラー: {e}")
 
 print(f"フィルタ後: {len(articles)} 件")
 
-# ======================
-# 記事少ない対策
-# ======================
 if len(articles) < 5:
     print("記事が少ないためフォールバック取得中...")
     for url in feeds[:2]:
@@ -89,37 +166,83 @@ if len(articles) < 5:
                 summary = getattr(entry, "summary", "")
                 if title and title not in seen:
                     seen.add(title)
+                    category = detect_category(title + " " + summary)
                     articles.append({
                         "title": title,
                         "link": link,
-                        "summary": make_summary(summary)
+                        "summary": make_summary(summary),
+                        "category": category,
                     })
         except Exception as e:
             print(f"  フォールバックエラー: {e}")
 
 # ======================
-# タイトル・日付生成
+# 日付生成
 # ======================
 now = datetime.datetime.now()
 date_str = now.strftime("%Y-%m-%d %H:%M:%S +0900")
-today_str = now.strftime("%Y-%m-%d")  # ← バグ修正: today → today_str
+today_str = now.strftime("%Y-%m-%d")
+today_jp = now.strftime("%Y年%m月%d日")
 
-main_title = f"M&Aニュースまとめ（{today_str}）主要案件を解説"
-page_summary = "本日のM&Aニュースを厳選してまとめ。買収・資本提携など重要トピックを短時間で把握できます。"
+# ======================
+# ピックアップ5件
+# ======================
+featured = articles[:5]
+all_headlines = articles
+
+featured_data = []
+for i, a in enumerate(featured, 1):
+    pro_title = make_professional_title(a, i)
+    img_url = make_image_url(a["category"], i * 13 + abs(hash(a["title"])) % 99)
+    featured_data.append({
+        "rank": i,
+        "pro_title": pro_title,
+        "link": a["link"],
+        "summary": a["summary"],
+        "category": a["category"],
+        "image": img_url,
+    })
+
+# ======================
+# メインタイトル
+# ======================
+if featured_data:
+    cats = list(dict.fromkeys([f["category"] for f in featured_data]))[:2]
+    cat_str = "・".join(cats)
+    main_title = f"{today_jp}のM&A動向：{cat_str}を中心に主要{min(len(articles), 10)}件を解説"
+else:
+    main_title = f"{today_jp}のM&Aニュース｜主要案件と市場動向"
+
+page_summary = f"本日（{today_jp}）のM&Aニュースを厳選。注目5案件の分析と、全{len(all_headlines)}件のヘッドラインをお届けします。"
 
 # ======================
 # 本文生成
 # ======================
-body = "## 今日の注目M&Aニュース\n\n"
+body = "## 本日の注目5案件\n\n"
+for f in featured_data:
+    body += f"### {f['rank']}. {f['pro_title']}\n\n"
+    body += f"**カテゴリ：** {f['category']}\n\n"
+    if f['summary']:
+        body += f"{f['summary']}\n\n"
+    body += f"[元記事を読む]({f['link']})\n\n---\n\n"
 
-if not articles:
-    body += "本日は該当するM&Aニュースが見つかりませんでした。\n"
-else:
-    for a in articles[:10]:
-        body += f"### {a['title']}\n\n"
-        if a['summary']:
-            body += f"{a['summary']}\n\n"
-        body += f"[記事を読む]({a['link']})\n\n---\n\n"
+body += "## 本日の全M&Aヘッドライン\n\n"
+for i, a in enumerate(all_headlines, 1):
+    body += f"{i}. [{a['title']}]({a['link']})\n"
+
+# ======================
+# featured YAMLブロック
+# ======================
+featured_yaml = ""
+for f in featured_data:
+    safe_title = f['pro_title'].replace('"', "'")
+    safe_summary = f['summary'].replace('"', "'")[:100]
+    featured_yaml += f'  - rank: {f["rank"]}\n'
+    featured_yaml += f'    title: "{safe_title}"\n'
+    featured_yaml += f'    link: "{f["link"]}"\n'
+    featured_yaml += f'    summary: "{safe_summary}"\n'
+    featured_yaml += f'    category: "{f["category"]}"\n'
+    featured_yaml += f'    image: "{f["image"]}"\n'
 
 # ======================
 # ファイル出力
@@ -128,7 +251,8 @@ content = f"""---
 title: "{main_title}"
 date: {date_str}
 summary: "{page_summary}"
----
+featured:
+{featured_yaml}---
 
 {body}
 """
@@ -139,4 +263,4 @@ filename = f"_posts/{today_str}-ma-news.md"
 with open(filename, "w", encoding="utf-8") as f:
     f.write(content)
 
-print(f"✅ 出力完了: {filename}（記事数: {len(articles[:10])}件）")
+print(f"✅ 出力完了: {filename}（ピックアップ{len(featured_data)}件 / 全{len(all_headlines)}件）")
