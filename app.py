@@ -103,23 +103,26 @@ def make_professional_title(article, rank):
     return f"{prefix}{short}"
 
 # ======================
-# 画像URL（Unsplash）
+# 画像URL（Picsum Photos - 無料・安定）
+# カテゴリごとにビジネス系の固定画像IDを割り当て
 # ======================
 def make_image_url(category, seed):
-    mapping = {
-        "IT・テクノロジー": "technology,business",
-        "金融・保険": "finance,business",
-        "医療・ヘルスケア": "healthcare,medical",
-        "製造・素材": "manufacturing,factory",
-        "不動産・建設": "building,real-estate",
-        "食品・飲食": "food,restaurant",
-        "小売・流通": "retail,logistics",
-        "エネルギー": "energy,industry",
-        "メディア・エンタメ": "media,entertainment",
-        "M&A総合": "business,meeting",
+    # Picsumのビジネス・都市・オフィス系画像IDリスト
+    category_ids = {
+        "IT・テクノロジー":   [0, 1, 180, 119, 160],
+        "金融・保険":        [20, 21, 318, 374, 433],
+        "医療・ヘルスケア":   [40, 41, 287, 386, 404],
+        "製造・素材":        [60, 61, 175, 244, 328],
+        "不動産・建設":      [80, 81, 164, 259, 356],
+        "食品・飲食":        [100, 101, 292, 431, 493],
+        "小売・流通":        [120, 121, 311, 366, 421],
+        "エネルギー":        [140, 141, 267, 339, 415],
+        "メディア・エンタメ": [160, 161, 305, 381, 446],
+        "M&A総合":          [10, 11, 200, 350, 400],
     }
-    kw = mapping.get(category, "business,meeting")
-    return f"https://source.unsplash.com/800x450/?{kw}&sig={seed}"
+    ids = category_ids.get(category, [10, 11, 200, 350, 400])
+    img_id = ids[seed % len(ids)]
+    return f"https://picsum.photos/seed/{img_id + seed}/800/450"
 
 # ======================
 # RSS取得
