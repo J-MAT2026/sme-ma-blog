@@ -276,12 +276,9 @@ for a in all_headlines[:30]:
     safe_title = a["title"].replace('"', "'")
     safe_link = a["link"]
     safe_cat = a["category"]
-    headlines_yaml += f'  - title: "{safe_title}"
-'
-    headlines_yaml += f'    link: "{safe_link}"
-'
-    headlines_yaml += f'    category: "{safe_cat}"
-'
+    headlines_yaml += "  - title: \"" + safe_title + "\"\n"
+    headlines_yaml += "    link: \"" + safe_link + "\"\n"
+    headlines_yaml += "    category: \"" + safe_cat + "\"\n"
 
 # ======================
 # ファイル出力
