@@ -57,50 +57,59 @@ title: J-MAT | 日本最大級M&Aニュース
     {% endif %}
   </div>
 
-  <!-- 右：全ヘッドライン -->
+  <!-- 右：日付別ヘッドライン -->
   <div class="headline-section">
     <h2 class="section-title">Headlines</h2>
 
-    <div class="headline-date">
-      {% if latest %}{{ latest.date | date: "%Y年%m月%d日" }}{% endif %}
-    </div>
-
-    <div class="headline-list">
-      {% if latest %}
-        {% assign content_lines = latest.content | split: "\n" %}
-        {% assign in_headlines = false %}
-        {% assign count = 0 %}
-        {% for line in content_lines %}
-          {% if line contains "本日の全M&Aヘッドライン" %}
-            {% assign in_headlines = true %}
-          {% elsif in_headlines and line contains ". [" and count < 20 %}
-            {% assign count = count | plus: 1 %}
-            {% assign parts = line | split: ". [" %}
-            {% assign rest = parts[1] | split: "](" %}
-            {% assign hl_title = rest[0] %}
-            {% assign hl_url = rest[1] | split: ")" | first %}
-            <a href="{{ hl_url }}" class="headline-item" target="_blank" rel="noopener">
-              <span class="headline-num">{{ count }}</span>
-              <span class="headline-text">{{ hl_title }}</span>
-              <span class="headline-arrow">↗</span>
-            </a>
+    <!-- 日付別アコーディオン -->
+    {% for post in site.posts limit:7 %}
+    <div class="headline-group">
+      <button class="headline-group-btn {% if forloop.first %}active{% endif %}"
+              onclick="toggleGroup(this)">
+        <span class="headline-group-date">{{ post.date | date: "%Y年%m月%d日" }}</span>
+        <span class="headline-group-count">
+          {% if post.headlines %}
+            {{ post.headlines | size }}件
+          {% else %}
+            -
           {% endif %}
-        {% endfor %}
-      {% else %}
-        <p class="no-posts">ヘッドラインを準備中です</p>
-      {% endif %}
-    </div>
+        </span>
+        <span class="headline-group-arrow">▾</span>
+      </button>
 
-    <!-- 過去の記事 -->
-    <div class="archive-section">
-      <div class="archive-title">過去の記事</div>
-      {% for post in site.posts limit:5 %}
-      <a href="{{ site.baseurl }}{{ post.url }}" class="archive-item">
-        <span class="archive-date">{{ post.date | date: "%m/%d" }}</span>
-        <span class="archive-text">{{ post.title | truncate: 30 }}</span>
-      </a>
-      {% endfor %}
+      <div class="headline-list {% if forloop.first %}open{% endif %}">
+        {% if post.headlines %}
+          {% for h in post.headlines %}
+          <a href="{{ h.link }}" class="headline-item" target="_blank" rel="noopener">
+            <span class="headline-cat">{{ h.category | truncate: 8, "" }}</span>
+            <span class="headline-text">{{ h.title | truncate: 45 }}</span>
+            <span class="headline-arrow">↗</span>
+          </a>
+          {% endfor %}
+        {% else %}
+          <div class="headline-item">
+            <span class="headline-text" style="color:#aaa">データを読み込み中...</span>
+          </div>
+        {% endif %}
+      </div>
     </div>
+    {% endfor %}
+
   </div>
 
 </div>
+
+<script>
+function toggleGroup(btn) {
+  const list = btn.nextElementSibling;
+  const isOpen = list.classList.contains('open');
+  // 全部閉じる
+  document.querySelectorAll('.headline-list').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.headline-group-btn').forEach(el => el.classList.remove('active'));
+  // クリックしたものだけ開く（すでに開いてたら閉じたまま）
+  if (!isOpen) {
+    list.classList.add('open');
+    btn.classList.add('active');
+  }
+}
+</script>
