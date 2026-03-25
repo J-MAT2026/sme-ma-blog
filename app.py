@@ -11,19 +11,45 @@ from bs4 import BeautifulSoup
 ma_keywords = [
     "買収", "子会社化", "株式取得", "事業譲渡", "合併",
     "資本提携", "出資", "M&A", "TOB", "MBO", "株式交換",
-    "第三者割当", "公開買付", "経営統合", "持分取得"
-]
-ng_keywords = [
-    "採用", "募集", "イベント", "セミナー", "転職",
-    "決算", "配当", "自己株式", "業績", "修正", "訂正"
+    "第三者割当", "公開買付", "経営統合", "持分取得",
+    "完全子会社", "グループ入り", "傘下", "吸収合併",
 ]
 
-feeds = [
-    # TDnet 適時開示（上場企業の一次情報）- M&A関連をキーワードフィルタで抽出
+# TDnet特有のM&Aタイトルパターン（これにマッチすれば確実にM&A）
+ma_strong_patterns = [
+    "公開買付", "TOB", "MBO", "株式交換", "吸収合併",
+    "株式移転", "会社分割", "事業譲渡", "経営統合",
+    "完全子会社化", "子会社化に関する", "株式取得に関する",
+    "資本業務提携", "資本提携に関する",
+]
+
+ng_keywords = [
+    # 採用・広報系
+    "採用", "募集", "イベント", "セミナー", "転職", "インターン",
+    "プレスリリース配信", "サービス開始", "リリース開始", "新サービス",
+    "アップデート", "キャンペーン", "新機能", "リニューアル",
+    # TDnetノイズ（M&Aと無関係な適時開示）
+    "四半期報告", "有価証券報告", "内部統制報告", "確認書",
+    "株主総会", "招集通知", "定時株主", "臨時株主",
+    "配当予想", "配当金", "記念配当",
+    "業績予想の修正", "業績修正", "業績予想修正",
+    "自己株式の取得", "自己株式取得状況", "自己株式消却",
+    "決算短信", "決算説明",
+    "代表取締役", "役員人事", "人事異動",
+]
+
+# ソース別にフィードを定義（優先度順）
+feeds_tdnet = [
     "https://webapi.yanoshin.jp/webapi/tdnet/list/recent.rss",
-    # PR Times 全体RSS（経営情報・M&A関連をキーワードフィルタで抽出）
+]
+feeds_prtimes = [
     "https://prtimes.jp/index.rdf",
 ]
+feeds_google = [
+    "https://news.google.com/rss/search?q=M%26A+買収+子会社化&hl=ja&gl=JP&ceid=JP:ja",
+    "https://news.google.com/rss/search?q=TOB+公開買付+経営統合&hl=ja&gl=JP&ceid=JP:ja",
+]
+feeds = feeds_tdnet + feeds_prtimes + feeds_google
 
 articles = []
 seen = set()
@@ -151,24 +177,48 @@ def make_image_url(category, seed):
 # ======================
 print("RSSフィードを取得中...")
 
+def is_ma_article(title, summary):
+    """M&A記事かどうかを判定する（強化版）"""
+    text = title + " " + summary
+
+    # NGキーワードがあれば即除外
+    if any(k in text for k in ng_keywords):
+        return False
+
+    # 強パターンにマッチすれば即採用（TDnet向け）
+    if any(p in title for p in ma_strong_patterns):
+        return True
+
+    # 通常キーワードは2つ以上マッチで採用（ノイズ低減）
+    matched = sum(1 for k in ma_keywords if k in text)
+    if matched >= 2:
+        return True
+
+    # タイトルだけで1つマッチ＋summaryでも1つマッチ
+    title_match = any(k in title for k in ma_keywords)
+    summary_match = any(k in summary for k in ma_keywords)
+    if title_match and summary_match:
+        return True
+
+    return False
+
 for url in feeds:
     try:
         print(f"  取得: {url}")
         feed = feedparser.parse(url)
         print(f"  → {len(feed.entries)} 件取得")
-        for entry in feed.entries[:30]:
+        for entry in feed.entries[:50]:
             title = getattr(entry, "title", "")
             link = getattr(entry, "link", "")
             summary = getattr(entry, "summary", "")
-            text = title + " " + summary
 
-            if not any(k in text for k in ma_keywords):
+            if not title:
                 continue
-            if any(k in text for k in ng_keywords):
+            if not is_ma_article(title, summary):
                 continue
-            if title and title not in seen:
+            if title not in seen:
                 seen.add(title)
-                category = detect_category(text)
+                category = detect_category(title + " " + summary)
                 articles.append({
                     "title": title,
                     "link": link,
