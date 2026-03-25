@@ -103,26 +103,47 @@ def make_professional_title(article, rank):
     return f"{prefix}{short}"
 
 # ======================
-# 画像URL（Picsum Photos - 無料・安定）
-# カテゴリごとにビジネス系の固定画像IDを割り当て
+# 画像URL（Pexels API）
 # ======================
-def make_image_url(category, seed):
-    # Picsumのビジネス・都市・オフィス系画像IDリスト
-    category_ids = {
-        "IT・テクノロジー":   [0, 1, 180, 119, 160],
-        "金融・保険":        [20, 21, 318, 374, 433],
-        "医療・ヘルスケア":   [40, 41, 287, 386, 404],
-        "製造・素材":        [60, 61, 175, 244, 328],
-        "不動産・建設":      [80, 81, 164, 259, 356],
-        "食品・飲食":        [100, 101, 292, 431, 493],
-        "小売・流通":        [120, 121, 311, 366, 421],
-        "エネルギー":        [140, 141, 267, 339, 415],
-        "メディア・エンタメ": [160, 161, 305, 381, 446],
-        "M&A総合":          [10, 11, 200, 350, 400],
+PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "")
+
+def fetch_pexels_image(category, seed):
+    """Pexels APIからカテゴリ別画像URLを取得"""
+    query_map = {
+        "IT・テクノロジー":   "technology office business",
+        "金融・保険":        "finance business meeting",
+        "医療・ヘルスケア":   "healthcare medical",
+        "製造・素材":        "manufacturing factory industry",
+        "不動産・建設":      "real estate building architecture",
+        "食品・飲食":        "food restaurant business",
+        "小売・流通":        "retail logistics warehouse",
+        "エネルギー":        "energy industry power",
+        "メディア・エンタメ": "media technology office",
+        "M&A総合":          "business meeting handshake",
     }
-    ids = category_ids.get(category, [10, 11, 200, 350, 400])
-    img_id = ids[seed % len(ids)]
-    return f"https://picsum.photos/seed/{img_id + seed}/800/450"
+    query = query_map.get(category, "business meeting")
+
+    if not PEXELS_API_KEY:
+        print("  ⚠️ PEXELS_API_KEY が未設定。フォールバック画像を使用")
+        return f"https://picsum.photos/seed/{seed * 13}/800/450"
+
+    try:
+        page = (seed % 3) + 1
+        url = f"https://api.pexels.com/v1/search?query={query}&per_page=5&page={page}&orientation=landscape"
+        resp = requests.get(url, headers={"Authorization": PEXELS_API_KEY}, timeout=10)
+        data = resp.json()
+        photos = data.get("photos", [])
+        if photos:
+            idx = seed % len(photos)
+            return photos[idx]["src"]["large"]
+    except Exception as e:
+        print(f"  Pexels取得エラー: {e}")
+
+    # フォールバック
+    return f"https://picsum.photos/seed/{seed * 13}/800/450"
+
+def make_image_url(category, seed):
+    return fetch_pexels_image(category, seed)
 
 # ======================
 # RSS取得
