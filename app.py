@@ -9,19 +9,20 @@ from bs4 import BeautifulSoup
 # キーワード
 # ======================
 ma_keywords = [
-    "買収", "企業買収", "子会社化", "株式取得",
-    "事業譲渡", "合併", "資本提携", "出資", "M&A", "TOB", "MBO"
+    "買収", "子会社化", "株式取得", "事業譲渡", "合併",
+    "資本提携", "出資", "M&A", "TOB", "MBO", "株式交換",
+    "第三者割当", "公開買付", "経営統合", "持分取得"
 ]
 ng_keywords = [
-    "採用", "募集", "イベント", "セミナー", "転職"
+    "採用", "募集", "イベント", "セミナー", "転職",
+    "決算", "配当", "自己株式", "業績", "修正", "訂正"
 ]
 
 feeds = [
-    "https://news.google.com/rss/search?q=M%26A+買収&hl=ja&gl=JP&ceid=JP:ja",
-    "https://news.google.com/rss/search?q=企業買収+合併&hl=ja&gl=JP&ceid=JP:ja",
-    "https://news.google.com/rss/search?q=資本提携+出資&hl=ja&gl=JP&ceid=JP:ja",
-    "https://prtimes.jp/topics/keywords/M%26A/rss",
-    "https://prtimes.jp/topics/keywords/%E8%B2%B7%E5%8F%8E/rss",
+    # TDnet 適時開示（上場企業の一次情報）- M&A関連をキーワードフィルタで抽出
+    "https://webapi.yanoshin.jp/webapi/tdnet/list/recent.rss",
+    # PR Times 全体RSS（経営情報・M&A関連をキーワードフィルタで抽出）
+    "https://prtimes.jp/index.rdf",
 ]
 
 articles = []
