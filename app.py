@@ -269,6 +269,21 @@ for f in featured_data:
     featured_yaml += f'    image: "{f["image"]}"\n'
 
 # ======================
+# headlines YAMLブロック
+# ======================
+headlines_yaml = ""
+for a in all_headlines[:30]:
+    safe_title = a["title"].replace('"', "'")
+    safe_link = a["link"]
+    safe_cat = a["category"]
+    headlines_yaml += f'  - title: "{safe_title}"
+'
+    headlines_yaml += f'    link: "{safe_link}"
+'
+    headlines_yaml += f'    category: "{safe_cat}"
+'
+
+# ======================
 # ファイル出力
 # ======================
 content = f"""---
@@ -276,7 +291,8 @@ title: "{main_title}"
 date: {date_str}
 summary: "{page_summary}"
 featured:
-{featured_yaml}---
+{featured_yaml}headlines:
+{headlines_yaml}---
 
 {body}
 """
