@@ -19,7 +19,8 @@ GEMINI_API_KEY   = os.environ.get("GEMINI_API_KEY", "")
 
 EDINETDB_BASE    = "https://edinetdb.jp/v1"
 EDINETDB_HEADERS = {"X-API-Key": EDINETDB_API_KEY}
-GEMINI_URL       = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+GEMINI_MODEL     = "gemini-2.0-flash"
+GEMINI_URL       = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
 
 # ======================
 # 経産省業種分類（主要のみ）
@@ -509,7 +510,11 @@ def gemini_generate(prompt):
         # candidatesが存在しない場合のフォールバック
         candidates = result.get("candidates", [])
         if not candidates:
-            print(f"  Gemini: candidatesなし (promptFeedback={result.get('promptFeedback',{})})")
+            # 詳細なエラー情報を出力
+            fb = result.get("promptFeedback", {})
+            err = result.get("error", {})
+            print(f"  Gemini: candidatesなし feedback={fb} error={err} status={r.status_code}")
+            print(f"  Gemini response keys: {list(result.keys())}")
             return ""
         parts = candidates[0].get("content", {}).get("parts", [])
         if not parts:
