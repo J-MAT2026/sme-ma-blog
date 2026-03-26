@@ -2,8 +2,10 @@ name: Daily M&A Update
 
 on:
   schedule:
-    - cron: '10 0 * * *'  # JST 09:10 毎日実行
-  workflow_dispatch:        # 手動実行も可能
+    - cron: '1 0 * * *'   # JST 09:01
+    - cron: '1 4 * * *'   # JST 13:01
+    - cron: '1 8 * * *'   # JST 17:01
+  workflow_dispatch:
 
 jobs:
   run:
@@ -26,14 +28,14 @@ jobs:
       - name: Run app.py
         run: python app.py
         env:
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          PEXELS_API_KEY:   ${{ secrets.PEXELS_API_KEY }}
           EDINETDB_API_KEY: ${{ secrets.EDINETDB_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY:   ${{ secrets.GEMINI_API_KEY }}
 
       - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add _posts/
-          git diff --cached --quiet || git commit -m "auto update: $(date '+%Y-%m-%d')"
+          git add _posts/ assets/charts/
+          git diff --cached --quiet || git commit -m "auto update: $(date '+%Y-%m-%d %H:%M')"
           git push
