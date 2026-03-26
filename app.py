@@ -19,9 +19,9 @@ GEMINI_API_KEY   = os.environ.get("GEMINI_API_KEY", "")
 
 EDINETDB_BASE    = "https://edinetdb.jp/v1"
 EDINETDB_HEADERS = {"X-API-Key": EDINETDB_API_KEY}
-CLAUDE_API_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
-CLAUDE_URL       = "https://api.anthropic.com/v1/messages"
-CLAUDE_MODEL     = "claude-haiku-4-5-20251001"  # 高速・低コスト
+GROQ_API_KEY     = os.environ.get("GROQ_API_KEY", "")
+GROQ_URL         = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL       = "llama-3.3-70b-versatile"  # 無料・高速・高品質
 
 # ======================
 # 経産省業種分類（主要のみ）
@@ -489,37 +489,40 @@ def generate_charts(financials, stock_prices, company_name):
 # ======================
 # Gemini APIで記事生成
 # ======================
-def claude_generate(prompt):
-    """Claude APIで記事・分析コメントを生成"""
-    if not CLAUDE_API_KEY:
-        print("  Claude API: APIキー未設定")
+def groq_generate(prompt):
+    """Groq APIで記事・分析コメントを生成（無料・高速）"""
+    if not GROQ_API_KEY:
+        print("  Groq API: APIキー未設定")
         return ""
     try:
         headers = {
-            "x-api-key": CLAUDE_API_KEY,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json",
         }
         payload = {
-            "model": CLAUDE_MODEL,
+            "model": GROQ_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 1000,
-            "messages": [{"role": "user", "content": prompt}]
+            "temperature": 0.7,
         }
-        r = requests.post(CLAUDE_URL, headers=headers, json=payload, timeout=45)
+        r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=45)
         result = r.json()
         if "error" in result:
-            print(f"  Claude error: {result['error'].get('type')} {result['error'].get('message','')[:80]}")
+            print(f"  Groq error: {result['error'].get('message','')[:100]}")
             return ""
-        content_blocks = result.get("content", [])
-        if content_blocks:
-            return content_blocks[0].get("text", "").strip()
+        choices = result.get("choices", [])
+        if choices:
+            return choices[0].get("message", {}).get("content", "").strip()
     except Exception as e:
-        print(f"  Claude API error: {e}")
+        print(f"  Groq API error: {e}")
     return ""
 
 # 後方互換のためエイリアスを定義
+def claude_generate(prompt):
+    return groq_generate(prompt)
+
 def gemini_generate(prompt, retry=1):
-    return claude_generate(prompt)
+    return groq_generate(prompt)
 
 def generate_article(deal, press_text, financials, analysis, text_blocks):
     """Geminiでオリジナル記事を生成"""
@@ -753,7 +756,7 @@ for i, deal in enumerate(ma_deals[:20]):
     article_body = ""
     analysis_comment = ""
     if i < 5:
-        print(f"  Claude記事生成中...")
+        print(f"  Groq記事生成中...")
         article_body = generate_article(deal, press_text, financials_all,
                                         companies_data[0].get("analysis",{}) if companies_data else {},
                                         text_blocks_all)
