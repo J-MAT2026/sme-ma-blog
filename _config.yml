@@ -1,6 +1,8 @@
 baseurl: "/sme-ma-blog"
 url: "https://j-mat2026.github.io"
 
+timezone: Asia/Tokyo
+future: true
 markdown: kramdown
 
 collections:
