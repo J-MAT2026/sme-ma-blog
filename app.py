@@ -59,7 +59,13 @@ METI_INDUSTRY_MAP = {
     "介護・社会福祉業": ["介護", "福祉", "高齢者"],
     "教育・学習支援業": ["教育", "学習", "学校", "塾"],
     "娯楽業": ["ゲーム", "エンタメ", "映画", "音楽", "アミューズメント"],
-    "サービス業（他に分類されないもの）": ["サービス", "コンサル", "人材"],
+    "廃棄物処理業": ["廃棄物", "ごみ処理", "リサイクル", "環境処理", "廃液", "産廃", "一般廃棄物"],
+    "警備・メンテナンス業": ["メンテナンス", "保守", "点検", "警備", "施設管理", "ビル管理"],
+    "消防・防災設備業": ["消防", "防災", "防火", "スプリンクラー"],
+    "広告・マーケティング業": ["広告", "マーケティング", "PR", "プロモーション", "リスティング", "SNS広告"],
+    "人材サービス業": ["人材", "派遣", "採用", "HR", "転職"],
+    "教育・学習支援業": ["教育", "学習", "学校", "塾", "スクール", "保育", "学童"],
+    "サービス業（他に分類されないもの）": ["サービス", "コンサル", "その他"],
 }
 
 def detect_meti_industry(text):
@@ -209,24 +215,36 @@ def fetch_tdnet_disclosure(company_name):
 
 def fetch_press_release(deal_url):
     """公式プレスリリースページから本文テキストを取得"""
+    from urllib.parse import urljoin
     try:
         r = requests.get(deal_url, headers=HEADERS_SCRAPE, timeout=15)
         soup = BeautifulSoup(r.text, "html.parser")
-        # PDF リンクを優先
-        pdf_links = [a.get("href","") for a in soup.find_all("a") if ".pdf" in a.get("href","").lower()]
-        if pdf_links:
-            pdf_url = pdf_links[0]
-            if not pdf_url.startswith("http"):
-                from urllib.parse import urljoin
-                pdf_url = urljoin(deal_url, pdf_url)
-            return {"type": "pdf_link", "url": pdf_url, "text": ""}
 
-        # テキスト抽出
-        for tag in soup(["script","style","nav","footer","header"]):
+        # 公式リリースPDFへのリンクを優先探索
+        press_url = deal_url
+        for a in soup.find_all("a", href=True):
+            href = a.get("href","")
+            text = a.get_text(strip=True)
+            # TDnet/IRページへのリンク
+            if any(k in href for k in ["release.tdnet", "tdnet.info", "ir.nikkei", "disclosure.edinet"]):
+                press_url = href if href.startswith("http") else urljoin(deal_url, href)
+                break
+            # プレスリリースPDF
+            if ".pdf" in href.lower() and any(k in text for k in ["プレスリリース","開示","適時","リリース","PDF"]):
+                press_url = href if href.startswith("http") else urljoin(deal_url, href)
+                break
+
+        # 本文テキスト抽出
+        for tag in soup(["script","style","nav","footer","header","aside"]):
             tag.decompose()
-        text = soup.get_text(separator="\n")
+        # maonline等の記事本文を特定
+        article = soup.find("article") or soup.find(class_=re.compile(r"article|content|body|entry"))
+        if article:
+            text = article.get_text(separator="\n")
+        else:
+            text = soup.get_text(separator="\n")
         text = re.sub(r'\n{3,}', '\n\n', text).strip()
-        return {"type": "html", "url": deal_url, "text": text[:3000]}
+        return {"type": "html", "url": press_url, "text": text[:3000]}
     except Exception as e:
         print(f"  press release fetch error: {e}")
     return {"type": "error", "url": deal_url, "text": ""}
