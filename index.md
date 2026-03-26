@@ -17,17 +17,24 @@ title: J-MAT | 日本最大級M&Aニュース
       <!-- 1位：大カード -->
       {% assign f = featured[0] %}
       <div class="featured-card featured-card--main">
-        <a href="{{ f.link }}" target="_blank" rel="noopener">
+        <a href="{{ site.baseurl }}{{ latest.url }}" class="featured-card-link">
           <div class="featured-img-wrap">
             <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
                  onerror="this.src='https://picsum.photos/seed/10/800/450'">
-            <div class="featured-cat">{{ f.category }}</div>
+            <div class="featured-cat">{{ f.industry }}</div>
             <div class="featured-rank">#1</div>
           </div>
           <div class="featured-body">
             <div class="featured-title">{{ f.title }}</div>
-            <div class="featured-summary">{{ f.summary }}</div>
-          {% if f.analysis %}<div class="featured-analysis">📊 {{ f.analysis }}</div>{% endif %}
+            {% if f.analysis %}
+            <div class="featured-analysis">📊 {{ f.analysis | truncate: 120 }}</div>
+            {% endif %}
+            {% if f.chart_pl != "" %}
+            <div class="featured-charts">
+              <img src="{{ site.baseurl }}{{ f.chart_pl }}" alt="PL推移" class="chart-img" loading="lazy">
+            </div>
+            {% endif %}
+            <div class="featured-press-link">📄 公式リリースを読む →</div>
           </div>
         </a>
       </div>
@@ -41,11 +48,14 @@ title: J-MAT | 日本最大級M&Aニュース
               <div class="featured-img-wrap">
                 <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
                      onerror="this.src='https://picsum.photos/seed/{{ f.rank }}0/800/450'">
-                <div class="featured-cat">{{ f.category }}</div>
+                <div class="featured-cat">{{ f.industry }}</div>
                 <div class="featured-rank">#{{ f.rank }}</div>
               </div>
               <div class="featured-body">
                 <div class="featured-title">{{ f.title }}</div>
+                {% if f.analysis %}
+                <div class="featured-analysis-mini">{{ f.analysis | truncate: 60 }}</div>
+                {% endif %}
               </div>
             </a>
           </div>
@@ -62,18 +72,15 @@ title: J-MAT | 日本最大級M&Aニュース
   <div class="headline-section">
     <h2 class="section-title">Headlines</h2>
 
-    <!-- 日付別アコーディオン -->
     {% for post in site.posts limit:7 %}
     <div class="headline-group">
       <button class="headline-group-btn {% if forloop.first %}active{% endif %}"
               onclick="toggleGroup(this)">
-        <span class="headline-group-date">{{ post.date | date: "%Y年%m月%d日" }}</span>
+        <span class="headline-group-date">{{ post.date | date: "%Y年%m月%d日" }}
+          {% if post.slot == "morning" %}朝{% elsif post.slot == "noon" %}昼{% else %}夕{% endif %}
+        </span>
         <span class="headline-group-count">
-          {% if post.headlines %}
-            {{ post.headlines | size }}件
-          {% else %}
-            -
-          {% endif %}
+          {% if post.headlines %}{{ post.headlines | size }}件{% else %}-{% endif %}
         </span>
         <span class="headline-group-arrow">▾</span>
       </button>
@@ -82,14 +89,14 @@ title: J-MAT | 日本最大級M&Aニュース
         {% if post.headlines %}
           {% for h in post.headlines %}
           <a href="{{ h.link }}" class="headline-item" target="_blank" rel="noopener">
-            <span class="headline-cat">{{ h.category | truncate: 8, "" }}</span>
-            <span class="headline-text">{{ h.title | truncate: 45 }}</span>
+            <span class="headline-cat">{{ h.industry | truncate: 8, "" }}</span>
+            <span class="headline-text">{{ h.title | truncate: 42 }}</span>
             <span class="headline-arrow">↗</span>
           </a>
           {% endfor %}
         {% else %}
           <div class="headline-item">
-            <span class="headline-text" style="color:#aaa">データを読み込み中...</span>
+            <span class="headline-text" style="color:#aaa">準備中...</span>
           </div>
         {% endif %}
       </div>
@@ -104,10 +111,8 @@ title: J-MAT | 日本最大級M&Aニュース
 function toggleGroup(btn) {
   const list = btn.nextElementSibling;
   const isOpen = list.classList.contains('open');
-  // 全部閉じる
   document.querySelectorAll('.headline-list').forEach(el => el.classList.remove('open'));
   document.querySelectorAll('.headline-group-btn').forEach(el => el.classList.remove('active'));
-  // クリックしたものだけ開く（すでに開いてたら閉じたまま）
   if (!isOpen) {
     list.classList.add('open');
     btn.classList.add('active');
