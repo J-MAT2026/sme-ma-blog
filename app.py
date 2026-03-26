@@ -319,8 +319,14 @@ def fetch_stock_price(sec_code):
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{code}?interval=1mo&period1={start}&period2={end}"
         r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
         data = r.json()
-        timestamps = data["chart"]["result"][0]["timestamp"]
-        closes = data["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+        result_data = data.get("chart", {}).get("result", [])
+        if not result_data:
+            return []
+        timestamps = result_data[0].get("timestamp", [])
+        quote = result_data[0].get("indicators", {}).get("quote", [])
+        if not quote or not timestamps:
+            return []
+        closes = quote[0].get("close", [])
         prices = []
         for t, c in zip(timestamps, closes):
             if c is None:
@@ -419,11 +425,25 @@ def gemini_generate(prompt):
             "generationConfig": {
                 "temperature": 0.7,
                 "maxOutputTokens": 1500,
-            }
+            },
+            "safetySettings": [
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            ]
         }
         r = requests.post(GEMINI_URL, json=payload, timeout=30)
         result = r.json()
-        return result["candidates"][0]["content"]["parts"][0]["text"].strip()
+        # candidatesが存在しない場合のフォールバック
+        candidates = result.get("candidates", [])
+        if not candidates:
+            print(f"  Gemini: candidatesなし (promptFeedback={result.get('promptFeedback',{})})")
+            return ""
+        parts = candidates[0].get("content", {}).get("parts", [])
+        if not parts:
+            return ""
+        return parts[0].get("text", "").strip()
     except Exception as e:
         print(f"  Gemini API error: {e}")
     return ""
