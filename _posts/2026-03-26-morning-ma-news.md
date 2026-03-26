@@ -1,13 +1,13 @@
 ---
 title: "2026年03月26日のM&A動向朝刊：注目5案件を財務分析付きで解説"
-date: 2026-03-26 08:43:14 +0900
+date: 2026-03-26 08:46:49 +0900
 summary: "本日朝刊のM&Aニュース。TDnet・公式プレスリリースをもとにGeminiが分析。財務データ・株価チャート付き。"
 slot: "morning"
 featured:
   - rank: 1
     title: "【廃棄物処理業】タクマ＜6013＞、一般廃棄物処理プラント運転・維持管理のカンエイメンテナンスを"
     link: "https://maonline.jp/news/20260325i"
-    image: "https://images.pexels.com/photos/5520322/pexels-photo-5520322.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/4175028/pexels-photo-4175028.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "廃棄物処理業"
     analysis: ""
     chart_pl: ""
@@ -15,7 +15,7 @@ featured:
   - rank: 2
     title: "【通信業】サイバーステップホールディングス＜3810＞、インターネット広告のTRUXiAを"
     link: "https://maonline.jp/news/20260325h"
-    image: "https://images.pexels.com/photos/4963433/pexels-photo-4963433.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/5520322/pexels-photo-5520322.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "通信業"
     analysis: ""
     chart_pl: ""
@@ -23,7 +23,7 @@ featured:
   - rank: 3
     title: "【サービス業（他に分類されないもの）】ハイマックス＜4299＞、SIerのコアソフトを子会社化"
     link: "https://maonline.jp/news/20260325b"
-    image: "https://images.pexels.com/photos/6077983/pexels-photo-6077983.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/4175028/pexels-photo-4175028.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "サービス業（他に分類されないもの）"
     analysis: ""
     chart_pl: ""
@@ -31,7 +31,7 @@ featured:
   - rank: 4
     title: "【建設業】グリーンクロスホールディングス＜272A＞、消防設備工事・点検の千歳防災社を子会"
     link: "https://maonline.jp/news/20260325c"
-    image: "https://images.pexels.com/photos/7472446/pexels-photo-7472446.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/2383649/pexels-photo-2383649.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "建設業"
     analysis: ""
     chart_pl: ""
@@ -39,7 +39,7 @@ featured:
   - rank: 5
     title: "【広告・マーケティング業】ZUU＜4387＞、リスティング広告・SNS広告企画・運用のグローバルマーケティ"
     link: "https://maonline.jp/news/20260325e"
-    image: "https://images.pexels.com/photos/6918507/pexels-photo-6918507.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/4963437/pexels-photo-4963437.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "広告・マーケティング業"
     analysis: ""
     chart_pl: ""
