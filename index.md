@@ -27,6 +27,7 @@ title: J-MAT | 日本最大級M&Aニュース
           <div class="featured-body">
             <div class="featured-title">{{ f.title }}</div>
             <div class="featured-summary">{{ f.summary }}</div>
+          {% if f.analysis %}<div class="featured-analysis">📊 {{ f.analysis }}</div>{% endif %}
           </div>
         </a>
       </div>
