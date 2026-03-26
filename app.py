@@ -19,8 +19,9 @@ GEMINI_API_KEY   = os.environ.get("GEMINI_API_KEY", "")
 
 EDINETDB_BASE    = "https://edinetdb.jp/v1"
 EDINETDB_HEADERS = {"X-API-Key": EDINETDB_API_KEY}
-GEMINI_MODEL     = "gemini-2.0-flash"
-GEMINI_URL       = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+CLAUDE_API_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
+CLAUDE_URL       = "https://api.anthropic.com/v1/messages"
+CLAUDE_MODEL     = "claude-haiku-4-5-20251001"  # 高速・低コスト
 
 # ======================
 # 経産省業種分類（主要のみ）
@@ -488,48 +489,37 @@ def generate_charts(financials, stock_prices, company_name):
 # ======================
 # Gemini APIで記事生成
 # ======================
-def gemini_generate(prompt, retry=3):
-    if not GEMINI_API_KEY:
+def claude_generate(prompt):
+    """Claude APIで記事・分析コメントを生成"""
+    if not CLAUDE_API_KEY:
+        print("  Claude API: APIキー未設定")
         return ""
-    for attempt in range(retry):
-        try:
-            if attempt > 0:
-                wait = 15 * attempt
-                print(f"  Gemini retry {attempt}/{retry} (wait {wait}s)...")
-                time.sleep(wait)
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "temperature": 0.7,
-                    "maxOutputTokens": 800,
-                },
-                "safetySettings": [
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-                ]
-            }
-            r = requests.post(GEMINI_URL, json=payload, timeout=45)
-            result = r.json()
-            # エラーチェック
-            if "error" in result:
-                err = result["error"]
-                print(f"  Gemini error: {err.get('code')} {err.get('message','')[:80]}")
-                if err.get('code') == 429:  # レート制限
-                    continue
-                return ""
-            candidates = result.get("candidates", [])
-            if not candidates:
-                fb = result.get("promptFeedback", {})
-                print(f"  Gemini: candidatesなし status={r.status_code} feedback={fb}")
-                continue
-            parts = candidates[0].get("content", {}).get("parts", [])
-            if parts:
-                return parts[0].get("text", "").strip()
-        except Exception as e:
-            print(f"  Gemini API error: {e}")
+    try:
+        headers = {
+            "x-api-key": CLAUDE_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+        payload = {
+            "model": CLAUDE_MODEL,
+            "max_tokens": 1000,
+            "messages": [{"role": "user", "content": prompt}]
+        }
+        r = requests.post(CLAUDE_URL, headers=headers, json=payload, timeout=45)
+        result = r.json()
+        if "error" in result:
+            print(f"  Claude error: {result['error'].get('type')} {result['error'].get('message','')[:80]}")
+            return ""
+        content_blocks = result.get("content", [])
+        if content_blocks:
+            return content_blocks[0].get("text", "").strip()
+    except Exception as e:
+        print(f"  Claude API error: {e}")
     return ""
+
+# 後方互換のためエイリアスを定義
+def gemini_generate(prompt, retry=1):
+    return claude_generate(prompt)
 
 def generate_article(deal, press_text, financials, analysis, text_blocks):
     """Geminiでオリジナル記事を生成"""
@@ -763,7 +753,7 @@ for i, deal in enumerate(ma_deals[:20]):
     article_body = ""
     analysis_comment = ""
     if i < 5:
-        print(f"  Gemini記事生成中...")
+        print(f"  Claude記事生成中...")
         article_body = generate_article(deal, press_text, financials_all,
                                         companies_data[0].get("analysis",{}) if companies_data else {},
                                         text_blocks_all)
