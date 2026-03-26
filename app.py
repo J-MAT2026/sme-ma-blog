@@ -488,40 +488,47 @@ def generate_charts(financials, stock_prices, company_name):
 # ======================
 # Gemini APIで記事生成
 # ======================
-def gemini_generate(prompt):
+def gemini_generate(prompt, retry=3):
     if not GEMINI_API_KEY:
         return ""
-    try:
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": 0.7,
-                "maxOutputTokens": 1500,
-            },
-            "safetySettings": [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-            ]
-        }
-        r = requests.post(GEMINI_URL, json=payload, timeout=30)
-        result = r.json()
-        # candidatesが存在しない場合のフォールバック
-        candidates = result.get("candidates", [])
-        if not candidates:
-            # 詳細なエラー情報を出力
-            fb = result.get("promptFeedback", {})
-            err = result.get("error", {})
-            print(f"  Gemini: candidatesなし feedback={fb} error={err} status={r.status_code}")
-            print(f"  Gemini response keys: {list(result.keys())}")
-            return ""
-        parts = candidates[0].get("content", {}).get("parts", [])
-        if not parts:
-            return ""
-        return parts[0].get("text", "").strip()
-    except Exception as e:
-        print(f"  Gemini API error: {e}")
+    for attempt in range(retry):
+        try:
+            if attempt > 0:
+                wait = 15 * attempt
+                print(f"  Gemini retry {attempt}/{retry} (wait {wait}s)...")
+                time.sleep(wait)
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 800,
+                },
+                "safetySettings": [
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                ]
+            }
+            r = requests.post(GEMINI_URL, json=payload, timeout=45)
+            result = r.json()
+            # エラーチェック
+            if "error" in result:
+                err = result["error"]
+                print(f"  Gemini error: {err.get('code')} {err.get('message','')[:80]}")
+                if err.get('code') == 429:  # レート制限
+                    continue
+                return ""
+            candidates = result.get("candidates", [])
+            if not candidates:
+                fb = result.get("promptFeedback", {})
+                print(f"  Gemini: candidatesなし status={r.status_code} feedback={fb}")
+                continue
+            parts = candidates[0].get("content", {}).get("parts", [])
+            if parts:
+                return parts[0].get("text", "").strip()
+        except Exception as e:
+            print(f"  Gemini API error: {e}")
     return ""
 
 def generate_article(deal, press_text, financials, analysis, text_blocks):
