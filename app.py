@@ -14,7 +14,11 @@ EDINETDB_API_KEY   = os.environ.get("EDINETDB_API_KEY", "")
 ANTHROPIC_API_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
 
 EDINETDB_BASE = "https://edinetdb.jp/v1"
-EDINETDB_HEADERS = {"X-API-Key": EDINETDB_API_KEY}
+EDINETDB_HEADERS = {
+    "Authorization": f"Bearer {EDINETDB_API_KEY}",
+    "X-API-Key": EDINETDB_API_KEY,
+    "Content-Type": "application/json",
+}
 
 # ======================
 # キーワード
@@ -42,6 +46,11 @@ ng_keywords = [
     "自己株式の取得", "自己株式取得状況", "自己株式消却",
     "決算短信", "決算説明",
     "代表取締役", "役員人事", "人事異動",
+    # 新株予約権・自己株式系のノイズ
+    "新株予約権", "ASR", "行使価額修正", "大量行使",
+    "ストックオプション", "転換社債", "社債",
+    # その他ノイズ
+    "為替差益", "為替差損", "減損", "特別損失", "特別利益",
 ]
 
 # ======================
@@ -193,14 +202,21 @@ def search_company_edinet(company_name):
         return None
     try:
         resp = requests.get(
-            f"{EDINETDB_BASE}/search",
-            params={"q": company_name},
+            f"{EDINETDB_BASE}/companies/search",
+            params={"q": company_name, "limit": 3},
             headers=EDINETDB_HEADERS,
             timeout=10
         )
-        data = resp.json().get("data", [])
-        if data:
-            return data[0]  # 最初のヒットを返す
+        print(f"    EDINETDB検索 [{company_name}] status={resp.status_code}")
+        if resp.status_code == 200:
+            result = resp.json()
+            # レスポンス構造をログ出力
+            print(f"    レスポンスキー: {list(result.keys()) if isinstance(result, dict) else type(result)}")
+            data = result.get("data", result.get("results", result.get("companies", [])))
+            if data and len(data) > 0:
+                return data[0]
+        else:
+            print(f"    エラーレスポンス: {resp.text[:200]}")
     except Exception as e:
         print(f"  EDINETDB検索エラー({company_name}): {e}")
     return None
