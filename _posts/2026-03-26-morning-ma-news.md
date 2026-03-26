@@ -1,21 +1,21 @@
 ---
 title: "2026年03月26日のM&A動向朝刊：注目5案件を財務分析付きで解説"
-date: 2026-03-26 06:41:48 +0900
+date: 2026-03-26 06:55:03 +0900
 summary: "本日朝刊のM&Aニュース。TDnet・公式プレスリリースをもとにGeminiが分析。財務データ・株価チャート付き。"
 slot: "morning"
 featured:
   - rank: 1
-    title: "【サービス業（他に分類されないもの）】タクマ＜6013＞、一般廃棄物処理プラント運転・維持管理のカンエイメンテナンスを"
+    title: "【廃棄物処理業】タクマ＜6013＞、一般廃棄物処理プラント運転・維持管理のカンエイメンテナンスを"
     link: "https://maonline.jp/news/20260325i"
-    image: "https://images.pexels.com/photos/36712840/pexels-photo-36712840.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
-    industry: "サービス業（他に分類されないもの）"
+    image: "https://images.pexels.com/photos/6285089/pexels-photo-6285089.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    industry: "廃棄物処理業"
     analysis: ""
     chart_pl: ""
     chart_stock: ""
   - rank: 2
     title: "【通信業】サイバーステップホールディングス＜3810＞、インターネット広告のTRUXiAを"
     link: "https://maonline.jp/news/20260325h"
-    image: "https://images.pexels.com/photos/5833878/pexels-photo-5833878.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/5520322/pexels-photo-5520322.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "通信業"
     analysis: ""
     chart_pl: ""
@@ -23,7 +23,7 @@ featured:
   - rank: 3
     title: "【サービス業（他に分類されないもの）】ハイマックス＜4299＞、SIerのコアソフトを子会社化"
     link: "https://maonline.jp/news/20260325b"
-    image: "https://images.pexels.com/photos/4963433/pexels-photo-4963433.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/7792841/pexels-photo-7792841.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "サービス業（他に分類されないもの）"
     analysis: ""
     chart_pl: ""
@@ -31,23 +31,23 @@ featured:
   - rank: 4
     title: "【建設業】グリーンクロスホールディングス＜272A＞、消防設備工事・点検の千歳防災社を子会"
     link: "https://maonline.jp/news/20260325c"
-    image: "https://images.pexels.com/photos/5215270/pexels-photo-5215270.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/36065437/pexels-photo-36065437.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "建設業"
     analysis: ""
-    chart_pl: ""
+    chart_pl: "/assets/charts/2026-03-26-morning-60a31100-pl.png"
     chart_stock: ""
   - rank: 5
-    title: "【サービス業（他に分類されないもの）】ZUU＜4387＞、リスティング広告・SNS広告企画・運用のグローバルマーケティ"
+    title: "【広告・マーケティング業】ZUU＜4387＞、リスティング広告・SNS広告企画・運用のグローバルマーケティ"
     link: "https://maonline.jp/news/20260325e"
-    image: "https://images.pexels.com/photos/36712840/pexels-photo-36712840.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
-    industry: "サービス業（他に分類されないもの）"
+    image: "https://images.pexels.com/photos/6077983/pexels-photo-6077983.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    industry: "広告・マーケティング業"
     analysis: ""
     chart_pl: ""
     chart_stock: ""
 headlines:
   - title: "タクマ＜6013＞、一般廃棄物処理プラント運転・維持管理のカンエイメンテナンスを子会社化"
     link: "https://maonline.jp/news/20260325i"
-    industry: "サービス業（他に分類されないもの）"
+    industry: "廃棄物処理業"
   - title: "サイバーステップホールディングス＜3810＞、インターネット広告のTRUXiAを子会社化"
     link: "https://maonline.jp/news/20260325h"
     industry: "通信業"
@@ -59,7 +59,7 @@ headlines:
     industry: "建設業"
   - title: "ZUU＜4387＞、リスティング広告・SNS広告企画・運用のグローバルマーケティングを子会社化"
     link: "https://maonline.jp/news/20260325e"
-    industry: "サービス業（他に分類されないもの）"
+    industry: "広告・マーケティング業"
   - title: "ソラスト＜6197＞、アジア系投資ファンドのMBKパートナーズと組んでMBOで株式を非公開化"
     link: "https://maonline.jp/news/20260324f"
     industry: "その他金融業"
@@ -109,9 +109,9 @@ headlines:
 
 ## 朝刊の注目5案件
 
-### 1. 【サービス業（他に分類されないもの）】タクマ＜6013＞、一般廃棄物処理プラント運転・維持管理のカンエイメンテナンスを
+### 1. 【廃棄物処理業】タクマ＜6013＞、一般廃棄物処理プラント運転・維持管理のカンエイメンテナンスを
 
-**業種分類（経産省）：** サービス業（他に分類されないもの）
+**業種分類（経産省）：** 廃棄物処理業
 
 [📄 公式リリースを読む](https://maonline.jp/news/20260325i)
 
@@ -137,13 +137,15 @@ headlines:
 
 **業種分類（経産省）：** 建設業
 
+![PL推移チャート](/assets/charts/2026-03-26-morning-60a31100-pl.png)
+
 [📄 公式リリースを読む](https://maonline.jp/news/20260325c)
 
 ---
 
-### 5. 【サービス業（他に分類されないもの）】ZUU＜4387＞、リスティング広告・SNS広告企画・運用のグローバルマーケティ
+### 5. 【広告・マーケティング業】ZUU＜4387＞、リスティング広告・SNS広告企画・運用のグローバルマーケティ
 
-**業種分類（経産省）：** サービス業（他に分類されないもの）
+**業種分類（経産省）：** 広告・マーケティング業
 
 [📄 公式リリースを読む](https://maonline.jp/news/20260325e)
 
@@ -151,11 +153,11 @@ headlines:
 
 ## 本日の全M&Aヘッドライン
 
-- [タクマ＜6013＞、一般廃棄物処理プラント運転・維持管理のカンエイメンテナンスを子会社化](https://maonline.jp/news/20260325i) （サービス業（他に分類されないもの））
+- [タクマ＜6013＞、一般廃棄物処理プラント運転・維持管理のカンエイメンテナンスを子会社化](https://maonline.jp/news/20260325i) （廃棄物処理業）
 - [サイバーステップホールディングス＜3810＞、インターネット広告のTRUXiAを子会社化](https://maonline.jp/news/20260325h) （通信業）
 - [ハイマックス＜4299＞、SIerのコアソフトを子会社化](https://maonline.jp/news/20260325b) （サービス業（他に分類されないもの））
 - [グリーンクロスホールディングス＜272A＞、消防設備工事・点検の千歳防災社を子会社化](https://maonline.jp/news/20260325c) （建設業）
-- [ZUU＜4387＞、リスティング広告・SNS広告企画・運用のグローバルマーケティングを子会社化](https://maonline.jp/news/20260325e) （サービス業（他に分類されないもの））
+- [ZUU＜4387＞、リスティング広告・SNS広告企画・運用のグローバルマーケティングを子会社化](https://maonline.jp/news/20260325e) （広告・マーケティング業）
 - [ソラスト＜6197＞、アジア系投資ファンドのMBKパートナーズと組んでMBOで株式を非公開化](https://maonline.jp/news/20260324f) （その他金融業）
 - [アイナボホールディングス＜7539＞、ラックランド＜9612＞傘下でビル設備管理・清掃管理のエースセンターを子会社化](https://maonline.jp/news/20260324e) （サービス業（他に分類されないもの））
 - [アスミホールディングス＜229A＞、建築・リフォーム工事のカーサ・プランニングを子会社化](https://maonline.jp/news/20260324d) （建設業）
