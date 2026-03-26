@@ -213,41 +213,102 @@ def fetch_tdnet_disclosure(company_name):
         print(f"  TDnet fetch error: {e}")
     return None
 
-def fetch_press_release(deal_url):
-    """公式プレスリリースページから本文テキストを取得"""
-    from urllib.parse import urljoin
+def fetch_tdnet_pdf_text(company_name_short):
+    """TDnetからM&A関連の適時開示PDFを取得してテキスト抽出"""
     try:
-        r = requests.get(deal_url, headers=HEADERS_SCRAPE, timeout=15)
+        # yanoshin APIで最新適時開示を検索
+        r = requests.get(
+            "https://webapi.yanoshin.jp/webapi/tdnet/list/recent.rss",
+            timeout=10
+        )
+        soup_rss = BeautifulSoup(r.text, "xml")
+        for item in soup_rss.find_all("item")[:200]:
+            title_tag = item.find("title")
+            link_tag  = item.find("link")
+            if not title_tag or not link_tag:
+                continue
+            title = title_tag.get_text()
+            link  = link_tag.get_text()
+            # 企業名 + M&Aキーワードでマッチ
+            if company_name_short[:3] in title and any(k in title for k in MA_STRONG):
+                # PDFリンクを直接取得
+                pdf_url = link
+                if "rd.php" in link:
+                    # リダイレクト先を取得
+                    rr = requests.get(link, headers=HEADERS_SCRAPE, 
+                                     timeout=10, allow_redirects=True)
+                    pdf_url = rr.url
+                print(f"    TDnet PDF発見: {title[:40]}")
+                return {"url": pdf_url, "title": title, "text": extract_pdf_text(pdf_url)}
+    except Exception as e:
+        print(f"    TDnet RSS error: {e}")
+    return None
+
+def extract_pdf_text(pdf_url):
+    """PDFからテキストを抽出（pdfminer不使用・シンプル版）"""
+    try:
+        r = requests.get(pdf_url, headers=HEADERS_SCRAPE, timeout=15)
+        if r.status_code != 200:
+            return ""
+        # バイナリからテキストを抽出（簡易版）
+        content = r.content
+        # PDFの生テキストを正規表現で抽出
+        text_parts = re.findall(rb'\(([^)]{4,200})\)', content)
+        extracted = []
+        for part in text_parts:
+            try:
+                t = part.decode('utf-8', errors='ignore')
+                if re.search(r'[ぁ-んァ-ン一-龥]', t):  # 日本語含む
+                    extracted.append(t)
+            except:
+                pass
+        result = " ".join(extracted[:100])
+        if len(result) > 100:
+            return result[:2000]
+    except Exception as e:
+        print(f"    PDF extract error: {e}")
+    return ""
+
+def fetch_press_release(deal_url, company_name=""):
+    """公式プレスリリース取得（TDnet PDF優先）"""
+    from urllib.parse import urljoin
+    press_url = deal_url
+    press_text = ""
+
+    # ① TDnet適時開示PDFを優先取得
+    if company_name:
+        tdnet = fetch_tdnet_pdf_text(company_name)
+        if tdnet and tdnet.get("text"):
+            return {"url": tdnet["url"], "text": tdnet["text"]}
+        elif tdnet:
+            press_url = tdnet["url"]
+
+    # ② maonlineページからTDnetリンクを探す
+    try:
+        r = requests.get(deal_url, headers=HEADERS_SCRAPE, timeout=12)
         soup = BeautifulSoup(r.text, "html.parser")
 
-        # 公式リリースPDFへのリンクを優先探索
-        press_url = deal_url
+        # TDnet/IRリンクを探す
         for a in soup.find_all("a", href=True):
             href = a.get("href","")
-            text = a.get_text(strip=True)
-            # TDnet/IRページへのリンク
-            if any(k in href for k in ["release.tdnet", "tdnet.info", "ir.nikkei", "disclosure.edinet"]):
+            if any(k in href for k in ["release.tdnet", "tdnet.info", ".pdf"]):
                 press_url = href if href.startswith("http") else urljoin(deal_url, href)
-                break
-            # プレスリリースPDF
-            if ".pdf" in href.lower() and any(k in text for k in ["プレスリリース","開示","適時","リリース","PDF"]):
-                press_url = href if href.startswith("http") else urljoin(deal_url, href)
+                if ".pdf" in press_url:
+                    text = extract_pdf_text(press_url)
+                    if text:
+                        return {"url": press_url, "text": text}
                 break
 
-        # 本文テキスト抽出
+        # ③ ページテキストをフォールバックとして使用
         for tag in soup(["script","style","nav","footer","header","aside"]):
             tag.decompose()
-        # maonline等の記事本文を特定
-        article = soup.find("article") or soup.find(class_=re.compile(r"article|content|body|entry"))
-        if article:
-            text = article.get_text(separator="\n")
-        else:
-            text = soup.get_text(separator="\n")
-        text = re.sub(r'\n{3,}', '\n\n', text).strip()
-        return {"type": "html", "url": press_url, "text": text[:3000]}
+        article = soup.find("article") or soup.find(attrs={"class": re.compile(r"article|news|content")})
+        raw = article.get_text(separator="\n") if article else soup.get_text(separator="\n")
+        press_text = re.sub(r'\n{3,}', '\n\n', raw).strip()[:2000]
     except Exception as e:
-        print(f"  press release fetch error: {e}")
-    return {"type": "error", "url": deal_url, "text": ""}
+        print(f"    fetch_press_release error: {e}")
+
+    return {"url": press_url, "text": press_text}
 
 # ======================
 # EDINETDB
@@ -487,26 +548,32 @@ def generate_article(deal, press_text, financials, analysis, text_blocks):
     credit = analysis.get("credit_score","") if analysis else ""
     ai_view = analysis.get("ai_comment","") if analysis else ""
 
-    prompt = f"""M&A専門メディアJ-MATの記者として、以下のM&A案件の記事を日本語で作成してください。
+    # プレスリリーステキストがある場合のプロンプト
+    if press_text and len(press_text) > 100:
+        info_section = f"【適時開示・プレスリリース】\n{press_text[:1000]}"
+    else:
+        info_section = "【注】一次情報なし。案件タイトルと財務データのみで分析。"
 
-案件: {deal['title']}
-一次情報: {press_text[:800] if press_text else 'なし'}
-財務: {fin_summary if fin_summary else 'なし'} スコア:{credit if credit else 'N/A'}/100
-事業計画: {biz_plan[:400] if biz_plan else 'なし'}
+    prompt = f"""あなたはM&A専門メディアJ-MATの記者です。以下の案件について日本語で記事を書いてください。
 
-以下の4セクションで出力してください：
+【案件名】{deal['title']}
+{info_section}
+【財務情報】{fin_summary if fin_summary else 'データなし'} 財務スコア:{credit if credit else 'N/A'}/100
+【有報の事業計画】{biz_plan[:300] if biz_plan else 'データなし'}
+
+次の4セクション形式で出力してください（各セクション100-200字）：
 
 ## 案件概要
-（150字：取引内容・規模・スキーム）
+（買い手・売り手・スキーム・取引規模を簡潔に）
 
 ## 戦略的背景
-（150字：取引理由・業界トレンド）
+（なぜこの買収か、業界環境、シナジー）
 
 ## 事業計画との整合性
-（150字：中期計画との関連・数値があれば引用）
+（中期計画・M&A方針との関連、具体的数値があれば引用）
 
-## 総合評価
-（80字：投資家・業界への影響）"""
+## J-MAT総合評価
+（この案件の注目ポイント・今後の展望）"""
 
     return gemini_generate(prompt)
 
@@ -539,21 +606,20 @@ def generate_analysis_comment(deal, financials, text_blocks, companies):
 
     company_names = " / ".join([c.get("name","") for c in companies if c])
 
-    prompt = f"""M&A専門アナリストとして、以下の財務データと事業計画をもとに分析コメントを書いてください。
+    prompt = f"""M&A専門アナリストとして、以下の財務データをもとに分析コメントを200-300字で書いてください。
 
-【案件】{deal['title']}
-【対象企業】{company_names}
-
-【直近5期財務推移】
+案件: {deal['title']}
+対象企業: {company_names}
+直近財務:
 {fin_text if fin_text else 'データなし'}
+事業計画: {biz_plan[:400] if biz_plan else 'データなし'}
 
-【有報記載の中期経営計画・事業方針】
-{biz_plan if biz_plan else 'データなし'}
+【分析の観点】
+1. 中期経営計画のM&A数値目標との整合性
+2. 財務的な買収余力（自己資本・純有利子負債）
+3. 買収後の業績への影響見通し
 
-【分析コメント（300字程度）】
-中期経営計画のM&A方針との整合性（具体的な数値目標があれば引用）、
-財務的な買収余力（自己資本・有利子負債水準）、
-今後の業績への影響見通しを専門家視点で論述してください。"""
+専門家視点で簡潔に論述してください。"""
 
     return gemini_generate(prompt)
 
@@ -623,7 +689,9 @@ for i, deal in enumerate(ma_deals[:20]):
     print(f"\n[{i+1}] {deal['title'][:50]}")
 
     # プレスリリース取得
-    press = fetch_press_release(deal["url"])
+    # 企業名の最初の部分（4文字）でTDnet検索
+    cn_short = company_names[0].replace('＜','').replace('株式会社','')[:6] if company_names else ""
+    press = fetch_press_release(deal["url"], company_name=cn_short)
     press_text = press.get("text","")
     press_url  = press.get("url", deal["url"])
     time.sleep(1)
