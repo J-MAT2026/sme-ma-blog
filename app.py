@@ -688,9 +688,9 @@ headline_data = []
 for i, deal in enumerate(ma_deals[:20]):
     print(f"\n[{i+1}] {deal['title'][:50]}")
 
-    # プレスリリース取得
-    # 企業名の最初の部分（4文字）でTDnet検索
-    cn_short = company_names[0].replace('＜','').replace('株式会社','')[:6] if company_names else ""
+    # タイトルから企業名を簡易抽出してTDnet検索キーに使用
+    title_cn = re.sub(r'＜[^＞]+＞', '', deal["title"]).strip()
+    cn_short = title_cn[:6]
     press = fetch_press_release(deal["url"], company_name=cn_short)
     press_text = press.get("text","")
     press_url  = press.get("url", deal["url"])
