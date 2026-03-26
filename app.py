@@ -349,7 +349,17 @@ def generate_charts(financials, stock_prices, company_name):
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import matplotlib.ticker as mtick
-        plt.rcParams["font.family"] = "DejaVu Sans"
+        # 日本語フォント設定
+        import subprocess
+        subprocess.run(["apt-get", "install", "-y", "-q", "fonts-noto-cjk"], 
+                      capture_output=True)
+        import matplotlib.font_manager as fm
+        fm._load_fontmanager(try_read_cache=False)
+        # Noto Sans CJK JPを優先、なければIPAex
+        for fname in ["Noto Sans CJK JP", "IPAexGothic", "DejaVu Sans"]:
+            if any(fname in f.name for f in fm.fontManager.ttflist):
+                plt.rcParams["font.family"] = fname
+                break
 
         # --- PL/BS 棒グラフ ---
         if financials:
@@ -453,14 +463,21 @@ def generate_article(deal, press_text, financials, analysis, text_blocks):
 
     fin_summary = ""
     if financials:
-        latest = financials[-1]
+        latest = financials[-1] if isinstance(financials, list) else financials
         rev = latest.get("revenue",0) or 0
         oi  = latest.get("operating_income",0) or 0
         ni  = latest.get("net_income",0) or 0
         fin_summary = f"直近売上高: {rev/1e8:.0f}億円 / 営業利益: {oi/1e8:.0f}億円 / 純利益: {ni/1e8:.0f}億円"
 
     biz_plan = ""
-    if text_blocks:
+    # text_blocksがlistの場合はdictに変換
+    if isinstance(text_blocks, list):
+        tb_dict = {}
+        for item in text_blocks:
+            if isinstance(item, dict):
+                tb_dict.update(item)
+        text_blocks = tb_dict
+    if isinstance(text_blocks, dict) and text_blocks:
         for key in ["business_strategy","management_policy","mid_term_plan","risks"]:
             val = text_blocks.get(key,"")
             if val:
@@ -470,39 +487,26 @@ def generate_article(deal, press_text, financials, analysis, text_blocks):
     credit = analysis.get("credit_score","") if analysis else ""
     ai_view = analysis.get("ai_comment","") if analysis else ""
 
-    prompt = f"""あなたはM&A専門メディア「J-MAT（JAPAN M&A TIMES）」の記者です。
-以下の情報をもとに、専門家向けの高品質なM&A記事を日本語で作成してください。
+    prompt = f"""M&A専門メディアJ-MATの記者として、以下のM&A案件の記事を日本語で作成してください。
 
-【案件情報】
-タイトル: {deal['title']}
-出典: {deal['source']}
+案件: {deal['title']}
+一次情報: {press_text[:800] if press_text else 'なし'}
+財務: {fin_summary if fin_summary else 'なし'} スコア:{credit if credit else 'N/A'}/100
+事業計画: {biz_plan[:400] if biz_plan else 'なし'}
 
-【一次情報（プレスリリース・適時開示）】
-{press_text[:1500] if press_text else '取得できませんでした'}
-
-【財務情報】
-{fin_summary if fin_summary else 'データなし'}
-財務健全性スコア: {credit if credit else 'N/A'} / 100
-{f'AI所見: {ai_view[:200]}' if ai_view else ''}
-
-【有報記載の事業計画・中期経営計画】
-{biz_plan[:600] if biz_plan else 'データなし'}
-
-【記事構成（必ず以下の形式で出力）】
+以下の4セクションで出力してください：
 
 ## 案件概要
-（200字程度：何社が何をした案件か、取引規模、スキーム）
+（150字：取引内容・規模・スキーム）
 
-## 取引の背景と戦略的意義
-（200字程度：なぜこの取引が行われたか、業界トレンド）
+## 戦略的背景
+（150字：取引理由・業界トレンド）
 
-## 事業計画との整合性分析
-（200字程度：有報の中期計画・M&A方針との整合性。データがある場合は具体的数値を使用）
+## 事業計画との整合性
+（150字：中期計画との関連・数値があれば引用）
 
-## J-MAT総合評価
-（100字程度：この案件の投資家・業界への影響、注目ポイント）
-
-※出典は記載不要。専門的かつ読みやすい文体で。"""
+## 総合評価
+（80字：投資家・業界への影響）"""
 
     return gemini_generate(prompt)
 
@@ -520,7 +524,13 @@ def generate_analysis_comment(deal, financials, text_blocks, companies):
         fin_text += f"FY{fy}: 売上{rev:.0f}億 営業利益{oi:.0f}億 純利益{ni:.0f}億\n"
 
     biz_plan = ""
-    if text_blocks:
+    if isinstance(text_blocks, list):
+        tb_dict = {}
+        for item in text_blocks:
+            if isinstance(item, dict):
+                tb_dict.update(item)
+        text_blocks = tb_dict
+    if isinstance(text_blocks, dict) and text_blocks:
         for key in ["mid_term_plan","business_strategy","management_policy"]:
             val = text_blocks.get(key,"")
             if val:
