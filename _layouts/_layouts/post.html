@@ -1,0 +1,20 @@
+---
+layout: default
+---
+<div class="post-header">
+  <a href="{{ site.baseurl }}/" class="back-link">← ニュース一覧に戻る</a>
+  <div class="post-tag-large">M&Aニュース</div>
+  <h1 class="post-heading">{{ page.title }}</h1>
+  <div class="post-meta-date">📅 {{ page.date | date: "%Y年%m月%d日" }}</div>
+  {% if page.summary %}
+  <div class="post-meta-summary">{{ page.summary }}</div>
+  {% endif %}
+</div>
+
+<div class="post-content">
+  {{ content }}
+</div>
+
+<div class="post-page-footer">
+  <a href="{{ site.baseurl }}/" class="back-btn">← ニュース一覧に戻る</a>
+</div>
