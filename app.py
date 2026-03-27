@@ -654,6 +654,10 @@ def generate_analysis_comment(deal, financials, text_blocks, companies, press_te
         if nums:
             press_nums = "プレスリリース記載の数値: " + " / ".join(nums[:8])
 
+    # バリュエーション指標を算出
+    valuation = calc_valuation(deal['title'], press_text)
+    val_text = format_valuation(valuation)
+
     prompt = f"""M&A専門アナリストとして、以下のデータに基づき財務分析コメントを書いてください。
 
 【案件】{deal['title']}
@@ -661,17 +665,138 @@ def generate_analysis_comment(deal, financials, text_blocks, companies, press_te
 {f'【EDINET財務データ（直近5年）】{chr(10)}{fin_text}' if fin_text else '【EDINET財務データ】取得不可'}
 {f'【中期経営計画】{biz_plan[:400]}' if biz_plan else ''}
 {press_nums}
+{val_text}
 
 【出力ルール】
-- 250〜350字で出力
-- 必ず以下3点に言及すること：
-  ① 買い手の財務的な買収余力（データがあれば自己資本比率・ネットDEレシオに言及、なければプレスリリースの数値を使用）
-  ② 売り手の収益性（営業利益率・売上規模から妥当性を評価）
-  ③ 今後の注目点（PMI・のれん計上・業績への影響見通し）
+- 300〜400字で出力
+- 必ず以下4点に言及すること：
+  ① バリュエーション評価（EV/売上高倍率、EV/EBITDA倍率、PBR等の算出可能な指標を計算し、業界水準との比較を行う。算出できない場合はその旨を明記）
+  ② 買い手の財務的な買収余力（データがあれば自己資本比率・ネットDEレシオに言及、なければプレスリリースの数値を使用）
+  ③ 売り手の収益性（営業利益率・売上規模から妥当性を評価）
+  ④ 今後の注目点（PMI・のれん計上・業績への影響見通し）
 - 数値は一次情報からの引用のみ。不明な場合は「開示情報からは確認できない」と明記
 - 「〜と考えられる」等の推量表現を適切に使い、断定を避ける"""
 
     return gemini_generate(prompt)
+
+# ======================
+# バリュエーション分析
+# ======================
+def parse_japanese_number(text):
+    """日本語の数値表現を数値に変換（例: '93億6800万' → 9368000000）"""
+    if not text:
+        return None
+    text = text.replace(',', '').replace(' ', '').strip()
+    total = 0
+    # 兆
+    m = re.search(r'([\d\.]+)\s*兆', text)
+    if m: total += float(m.group(1)) * 1e12
+    # 億
+    m = re.search(r'([\d\.]+)\s*億', text)
+    if m: total += float(m.group(1)) * 1e8
+    # 百万
+    m = re.search(r'([\d\.]+)\s*百万', text)
+    if m: total += float(m.group(1)) * 1e6
+    # 万
+    m = re.search(r'([\d\.]+)\s*万', text)
+    if m: total += float(m.group(1)) * 1e4
+    if total > 0:
+        return total
+    # 純粋な数値（円単位）
+    m = re.search(r'([\d\.]+)', text)
+    if m:
+        val = float(m.group(1))
+        if val > 0:
+            return val
+    return None
+
+def extract_financial_numbers(text):
+    """プレスリリーステキストから財務数値を抽出"""
+    result = {}
+    patterns = {
+        'acquisition_price': [
+            r'取得価額[はが\s:：]*約?([\d,\.]+(?:兆|億|百万|万)?円?)',
+            r'買収価[額格][はが\s:：]*約?([\d,\.]+(?:兆|億|百万|万)?円?)',
+            r'([\d,\.]+(?:億|百万|万)円?)(?:で[取買]得|で買収)',
+        ],
+        'revenue': [
+            r'売上高[はが\s:：]*約?([\d,\.]+(?:兆|億|百万|万)?円?)',
+            r'売上[はが\s:：]*約?([\d,\.]+(?:兆|億|百万|万)?円?)',
+        ],
+        'operating_income': [
+            r'営業利益[はが\s:：]*約?([\d,\.]+(?:兆|億|百万|万)?円?)',
+        ],
+        'net_assets': [
+            r'純資産[はが\s:：]*約?([\d,\.]+(?:兆|億|百万|万)?円?)',
+        ],
+        'net_income': [
+            r'純利益[はが\s:：]*約?([\d,\.]+(?:兆|億|百万|万)?円?)',
+            r'当期純利益[はが\s:：]*約?([\d,\.]+(?:兆|億|百万|万)?円?)',
+        ],
+    }
+    for key, pats in patterns.items():
+        for pat in pats:
+            m = re.search(pat, text)
+            if m:
+                val = parse_japanese_number(m.group(1))
+                if val and val > 0:
+                    result[key] = val
+                    break
+    return result
+
+def calc_valuation(title, press_text):
+    """取得価額と財務数値からバリュエーション指標を算出"""
+    text = title + " " + (press_text or "")
+    nums = extract_financial_numbers(text)
+    valuation = {"raw": nums}
+
+    ap = nums.get('acquisition_price')
+    rev = nums.get('revenue')
+    oi = nums.get('operating_income')
+    na = nums.get('net_assets')
+    ni = nums.get('net_income')
+
+    if ap and rev and rev > 0:
+        valuation['ev_revenue'] = round(ap / rev, 2)
+    if ap and oi and oi > 0:
+        valuation['ev_ebitda_approx'] = round(ap / oi, 1)  # EBITDA≒営業利益の近似
+    if ap and na and na > 0:
+        valuation['pbr'] = round(ap / na, 2)
+    if ap and ni and ni > 0:
+        valuation['per'] = round(ap / ni, 1)
+    if rev and oi and rev > 0:
+        valuation['op_margin'] = round(oi / rev * 100, 1)
+
+    return valuation
+
+def format_valuation(val):
+    """バリュエーション指標をプロンプト用テキストに整形"""
+    lines = []
+    raw = val.get('raw', {})
+
+    if raw.get('acquisition_price'):
+        lines.append(f"取得価額: {raw['acquisition_price']/1e8:.1f}億円")
+    if raw.get('revenue'):
+        lines.append(f"売り手売上高: {raw['revenue']/1e8:.1f}億円")
+    if raw.get('operating_income'):
+        lines.append(f"売り手営業利益: {raw['operating_income']/1e8:.1f}億円")
+    if raw.get('net_assets'):
+        lines.append(f"売り手純資産: {raw['net_assets']/1e8:.1f}億円")
+
+    if val.get('ev_revenue'):
+        lines.append(f"EV/売上高倍率: {val['ev_revenue']}x")
+    if val.get('ev_ebitda_approx'):
+        lines.append(f"EV/EBITDA倍率(近似): {val['ev_ebitda_approx']}x")
+    if val.get('pbr'):
+        lines.append(f"PBR: {val['pbr']}x")
+    if val.get('per'):
+        lines.append(f"PER: {val['per']}x")
+    if val.get('op_margin'):
+        lines.append(f"営業利益率: {val['op_margin']}%")
+
+    if lines:
+        return "【バリュエーション分析（自動算出）】\n" + "\n".join(lines)
+    return "【バリュエーション分析】取得価額または財務数値が非公表のため算出不可"
 
 # ======================
 # 業種別画像取得（Pexels API 改善版）
@@ -830,20 +955,12 @@ for i, deal in enumerate(ma_deals[:20]):
     if financials_all or stock_prices:
         charts = generate_charts(financials_all, stock_prices, main_company)
 
-    # LLMで記事・分析コメント生成（ピックアップ5件のみ）
+    # バリュエーション算出（全案件で実施）
+    valuation = calc_valuation(deal['title'], press_text)
+
+    # LLM生成はランキング後に実施するため、ここではスキップ
     article_body = ""
     analysis_comment = ""
-    if i < 5:
-        print(f"  LLM記事生成中...")
-        article_body = generate_article(deal, press_text, financials_all,
-                                        companies_data[0].get("analysis",{}) if companies_data else {},
-                                        text_blocks_all)
-        # 財務データの有無に関わらず分析コメントを生成（プレスリリースの数値で補完）
-        print(f"  LLM分析コメント生成中...")
-        analysis_comment = generate_analysis_comment(
-            deal, financials_all, text_blocks_all, companies_data, press_text
-        )
-        time.sleep(1)
 
     # 画像
     seed = abs(hash(deal["title"])) % 100
@@ -871,19 +988,109 @@ for i, deal in enumerate(ma_deals[:20]):
         "pro_title":        pro_title,
         "url":              deal["url"],
         "press_url":        press_url,
+        "press_text":       press_text,
         "source":           deal["source"],
         "industry":         industry,
         "image":            img_url,
         "article_body":     article_body,
         "analysis_comment": analysis_comment,
+        "valuation":        valuation,
         "charts":           charts,
         "companies":        companies_data,
+        "financials":       financials_all,
+        "text_blocks":      text_blocks_all,
         "has_financials":   bool(financials_all),
     }
 
-    if i < 5:
-        featured_data.append(art)
     headline_data.append(art)
+
+# ======================
+# ピックアップ5件のランキング（スコアリング）
+# 優先度: ① 取得価額が公表 → ② 金額が大きい → ③ 話題性（TOB/MBO/大手企業）
+# ======================
+def calc_deal_score(art):
+    """案件のピックアップ優先度スコアを算出"""
+    score = 0
+    val = art.get("valuation", {})
+    raw = val.get("raw", {})
+    title = art.get("title", "")
+
+    # ① 取得価額が公表されている（最優先、+1000点）
+    ap = raw.get("acquisition_price", 0)
+    if ap > 0:
+        score += 1000
+        # 金額が大きいほど加点（億円単位で対数スコア）
+        import math
+        score += min(int(math.log10(max(ap, 1)) * 50), 500)
+
+    # ② 売り手の財務数値が判明している（+200点）
+    if raw.get("revenue"):
+        score += 200
+    if raw.get("operating_income"):
+        score += 100
+
+    # ③ 話題性の高いスキーム（+300点）
+    if "TOB" in title or "公開買付" in title:
+        score += 300
+    elif "MBO" in title:
+        score += 250
+    elif "経営統合" in title or "合併" in title:
+        score += 200
+    elif "完全子会社化" in title:
+        score += 150
+
+    # ④ 大手企業・有名企業の関与（証券コード付き = 上場企業）
+    if "＜" in title and "＞" in title:
+        score += 50
+
+    # ⑤ LLM記事が生成されている
+    if art.get("article_body"):
+        score += 100
+
+    return score
+
+# 全案件をスコアリングしてソート
+for art in headline_data:
+    art["_score"] = calc_deal_score(art)
+
+ranked = sorted(headline_data, key=lambda x: x["_score"], reverse=True)
+featured_data = ranked[:5]
+
+# ランクを振り直す
+for i, art in enumerate(featured_data):
+    art["rank"] = i + 1
+    print(f"  ピックアップ#{i+1}: [score={art['_score']}] {art['pro_title'][:50]}")
+
+# featured以外のheadlineにもrank情報をクリア
+for art in headline_data:
+    if art not in featured_data:
+        art["rank"] = 0
+
+# ======================
+# ピックアップ5件のLLM記事・分析コメント生成
+# ======================
+print("\n=== ピックアップ5件のLLM記事生成 ===")
+for art in featured_data:
+    print(f"\n  [{art['rank']}] {art['pro_title'][:50]}")
+
+    print(f"  LLM記事生成中...")
+    art["article_body"] = generate_article(
+        {"title": art["title"], "url": art["url"]},
+        art.get("press_text", ""),
+        art.get("financials", []),
+        art["companies"][0].get("analysis", {}) if art.get("companies") else {},
+        art.get("text_blocks", {})
+    )
+
+    print(f"  LLM分析コメント生成中...")
+    art["analysis_comment"] = generate_analysis_comment(
+        {"title": art["title"]},
+        art.get("financials", []),
+        art.get("text_blocks", {}),
+        art.get("companies", []),
+        art.get("press_text", "")
+    )
+    time.sleep(1)
 
 # ======================
 # 記事ページ（_posts）生成
@@ -944,6 +1151,25 @@ for art in featured_data:
     body += f"**業種分類（経産省）：** {art['industry']}\n\n"
     if art["article_body"]:
         body += art["article_body"] + "\n\n"
+    # バリュエーション分析テーブル
+    val = art.get("valuation", {})
+    val_rows = []
+    if val.get("raw", {}).get("acquisition_price"):
+        val_rows.append(f"| 取得価額 | {val['raw']['acquisition_price']/1e8:.1f}億円 |")
+    if val.get("ev_revenue"):
+        val_rows.append(f"| EV/売上高倍率 | {val['ev_revenue']}x |")
+    if val.get("ev_ebitda_approx"):
+        val_rows.append(f"| EV/EBITDA（近似） | {val['ev_ebitda_approx']}x |")
+    if val.get("pbr"):
+        val_rows.append(f"| PBR | {val['pbr']}x |")
+    if val.get("per"):
+        val_rows.append(f"| PER | {val['per']}x |")
+    if val.get("op_margin"):
+        val_rows.append(f"| 営業利益率 | {val['op_margin']}% |")
+    if val_rows:
+        body += "**📈 バリュエーション分析**\n\n"
+        body += "| 指標 | 値 |\n|:---|:---|\n"
+        body += "\n".join(val_rows) + "\n\n"
     if art["analysis_comment"]:
         body += f"---\n**📊 財務分析コメント**\n\n{art['analysis_comment']}\n\n"
     if art.get("chart_pl_path"):
