@@ -506,7 +506,7 @@ def groq_generate(prompt):
                 {"role": "system", "content": "あなたはM&A専門メディアのシニアアナリストです。正確で簡潔な日本語で出力してください。Markdown形式で出力し、余計なメタコメントや注釈は一切含めないでください。"},
                 {"role": "user", "content": prompt}
             ],
-            "max_tokens": 2000,
+            "max_tokens": 3000,
             "temperature": 0.4,
         }
         r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=45)
@@ -538,6 +538,14 @@ def clean_llm_output(text):
                   'PMI（Post Merger Integration：買収後統合）', text)
     # 連続改行の整理
     text = re.sub(r'\n{4,}', '\n\n\n', text)
+    # 末尾が文の途中で切れている場合、最後の不完全な行を削除
+    lines = text.rstrip().split('\n')
+    if lines:
+        last = lines[-1].strip()
+        # 末尾が句点・閉じ括弧・記号で終わっていない場合は不完全
+        if last and not re.search(r'[。．.）\)」』】！!？?]$', last) and len(last) < 30:
+            lines = lines[:-1]
+        text = '\n'.join(lines)
     # 先頭の空行を削除
     text = text.strip()
     return text
@@ -615,7 +623,9 @@ def generate_article(deal, press_text, financials, analysis, text_blocks):
 （中期経営計画でのM&A方針・数値目標との整合性。過去のM&A実績との比較。財務的な買収余力（自己資本比率等）への言及。データがない場合はその旨を明記。）
 
 ## J-MAT総合評価
-（本案件の戦略的意義を総括。買収プレミアムの妥当性、PMI（買収後統合）の課題、今後のウォッチポイントを専門家目線で指摘。）"""
+（本案件の戦略的意義を総括。買収プレミアムの妥当性、PMI（買収後統合）の課題、今後のウォッチポイントを専門家目線で指摘。）
+
+※ 必ず全てのセクションを最後まで書き切ること。文の途中で終わらないこと。"""
 
     return gemini_generate(prompt)
 
@@ -675,7 +685,8 @@ def generate_analysis_comment(deal, financials, text_blocks, companies, press_te
   ③ 売り手の収益性（営業利益率・売上規模から妥当性を評価）
   ④ 今後の注目点（PMI・のれん計上・業績への影響見通し）
 - 数値は一次情報からの引用のみ。不明な場合は「開示情報からは確認できない」と明記
-- 「〜と考えられる」等の推量表現を適切に使い、断定を避ける"""
+- 「〜と考えられる」等の推量表現を適切に使い、断定を避ける
+- 必ず全てのセクションを最後まで書き切ること。文の途中で終わらないこと"""
 
     return gemini_generate(prompt)
 
