@@ -674,52 +674,72 @@ def generate_analysis_comment(deal, financials, text_blocks, companies, press_te
     return gemini_generate(prompt)
 
 # ======================
-# 業種別アイコン・カラーシステム（Pexels写真を廃止）
+# 業種別画像取得（Pexels API 改善版）
 # ======================
-INDUSTRY_STYLE = {
-    "情報サービス業":           {"icon": "💻", "color": "#2563eb", "bg": "#dbeafe"},
-    "インターネット附随サービス業": {"icon": "🌐", "color": "#7c3aed", "bg": "#ede9fe"},
-    "通信業":                   {"icon": "📡", "color": "#0891b2", "bg": "#cffafe"},
-    "建設業":                   {"icon": "🏗️", "color": "#d97706", "bg": "#fef3c7"},
-    "不動産業":                 {"icon": "🏢", "color": "#059669", "bg": "#d1fae5"},
-    "医薬品製造業":             {"icon": "💊", "color": "#dc2626", "bg": "#fee2e2"},
-    "医療業":                   {"icon": "🏥", "color": "#e11d48", "bg": "#ffe4e6"},
-    "食料品製造業":             {"icon": "🍽️", "color": "#ea580c", "bg": "#ffedd5"},
-    "飲食サービス業":           {"icon": "🍳", "color": "#ea580c", "bg": "#ffedd5"},
-    "機械器具製造業":           {"icon": "⚙️", "color": "#4b5563", "bg": "#e5e7eb"},
-    "電気機械器具製造業":       {"icon": "🔌", "color": "#1d4ed8", "bg": "#dbeafe"},
-    "化学工業":                 {"icon": "🧪", "color": "#7c3aed", "bg": "#ede9fe"},
-    "広告・マーケティング業":   {"icon": "📢", "color": "#c026d3", "bg": "#fae8ff"},
-    "人材サービス業":           {"icon": "👥", "color": "#0d9488", "bg": "#ccfbf1"},
-    "教育・学習支援業":         {"icon": "📚", "color": "#4f46e5", "bg": "#e0e7ff"},
-    "その他金融業":             {"icon": "💰", "color": "#b45309", "bg": "#fef3c7"},
-    "銀行業":                   {"icon": "🏦", "color": "#1e40af", "bg": "#dbeafe"},
-    "小売業":                   {"icon": "🛒", "color": "#16a34a", "bg": "#dcfce7"},
-    "卸売業":                   {"icon": "📦", "color": "#78716c", "bg": "#f5f5f4"},
-    "運輸業":                   {"icon": "🚚", "color": "#0369a1", "bg": "#e0f2fe"},
-    "廃棄物処理業":             {"icon": "♻️", "color": "#15803d", "bg": "#dcfce7"},
-    "木材・木製品製造業":       {"icon": "🪵", "color": "#92400e", "bg": "#fef3c7"},
-    "繊維工業":                 {"icon": "🧵", "color": "#9333ea", "bg": "#f3e8ff"},
-    "娯楽業":                   {"icon": "🎮", "color": "#e11d48", "bg": "#ffe4e6"},
-    "警備・メンテナンス業":     {"icon": "🔧", "color": "#525252", "bg": "#e5e7eb"},
-    "消防・防災設備業":         {"icon": "🚒", "color": "#dc2626", "bg": "#fee2e2"},
-    "介護・社会福祉業":        {"icon": "🤝", "color": "#0d9488", "bg": "#ccfbf1"},
-    "宿泊業":                   {"icon": "🏨", "color": "#6d28d9", "bg": "#ede9fe"},
-    "鉄鋼業":                   {"icon": "🔩", "color": "#57534e", "bg": "#e7e5e4"},
-    "非鉄金属製造業":           {"icon": "⛏️", "color": "#a16207", "bg": "#fefce8"},
-    "自動車・同附属品製造業":   {"icon": "🚗", "color": "#1e3a5f", "bg": "#dbeafe"},
-    "電気・ガス・熱供給・水道業": {"icon": "⚡", "color": "#ca8a04", "bg": "#fef9c3"},
-    "農業":                     {"icon": "🌾", "color": "#65a30d", "bg": "#ecfccb"},
-    "保険業":                   {"icon": "🛡️", "color": "#0f766e", "bg": "#ccfbf1"},
+INDUSTRY_IMAGE_QUERIES = {
+    "情報サービス業":           ["software development office", "server room technology", "coding programming screen"],
+    "インターネット附随サービス業": ["ecommerce online shopping", "digital platform website", "smartphone app mobile"],
+    "通信業":                   ["5G telecommunication tower", "fiber optic cable network", "satellite communication"],
+    "建設業":                   ["construction site crane", "building architecture modern", "civil engineering bridge"],
+    "不動産業":                 ["modern apartment building", "commercial real estate office", "property architecture city"],
+    "医薬品製造業":             ["pharmaceutical laboratory research", "medicine pills capsules", "biotech lab scientist"],
+    "医療業":                   ["hospital medical equipment", "healthcare clinic interior", "doctor medical professional"],
+    "食料品製造業":             ["food factory production line", "food manufacturing quality", "beverage production facility"],
+    "飲食サービス業":           ["restaurant kitchen cooking", "japanese restaurant interior", "cafe dining table food"],
+    "機械器具製造業":           ["industrial machinery factory", "manufacturing automation robot", "precision engineering metal"],
+    "電気機械器具製造業":       ["semiconductor chip closeup", "electronics manufacturing pcb", "circuit board technology"],
+    "化学工業":                 ["chemical laboratory flask", "cosmetics beauty products", "paint color industrial"],
+    "広告・マーケティング業":   ["digital marketing analytics", "advertising creative agency", "social media marketing"],
+    "人材サービス業":           ["job interview business meeting", "career recruitment office", "handshake business deal"],
+    "教育・学習支援業":         ["classroom education students", "online learning laptop", "university campus building"],
+    "その他金融業":             ["stock market finance graph", "investment fund portfolio", "financial district skyline"],
+    "銀行業":                   ["bank building architecture", "financial services office", "banking digital transaction"],
+    "小売業":                   ["retail store shopping mall", "supermarket grocery aisle", "shop display merchandise"],
+    "卸売業":                   ["warehouse logistics boxes", "wholesale distribution center", "cargo container shipping"],
+    "運輸業":                   ["logistics truck highway", "cargo ship port container", "warehouse forklift operation"],
+    "廃棄物処理業":             ["recycling facility plant", "waste management environmental", "green energy sustainable"],
+    "木材・木製品製造業":       ["timber lumber woodwork", "sawmill wood processing", "wooden furniture crafting"],
+    "繊維工業":                 ["textile fabric manufacturing", "fashion apparel clothing", "sewing machine production"],
+    "娯楽業":                   ["gaming entertainment technology", "amusement park attraction", "concert music event"],
+    "警備・メンテナンス業":     ["building maintenance facility", "security guard monitoring", "cleaning service professional"],
+    "消防・防災設備業":         ["fire safety equipment", "fire extinguisher sprinkler", "emergency safety system"],
+    "介護・社会福祉業":         ["elderly care nursing home", "childcare nursery playground", "welfare community support"],
+    "宿泊業":                   ["luxury hotel lobby interior", "resort accommodation travel", "japanese ryokan traditional"],
+    "鉄鋼業":                   ["steel factory molten metal", "iron manufacturing industrial", "metal fabrication welding"],
+    "非鉄金属製造業":           ["aluminum metal processing", "mining mineral extraction", "precious metals gold"],
+    "自動車・同附属品製造業":   ["automotive assembly line", "car manufacturing robot", "electric vehicle technology"],
+    "電気・ガス・熱供給・水道業": ["power plant energy generation", "wind turbine renewable", "hydroelectric dam water"],
+    "農業":                     ["agriculture farming field", "harvest crop tractor", "greenhouse farming organic"],
+    "保険業":                   ["insurance protection umbrella", "family safety security", "business risk management"],
+    "証券・商品先物取引業":     ["stock exchange trading floor", "financial chart analysis", "wall street finance"],
+    "放送業":                   ["television broadcast studio", "media production camera", "news anchor journalism"],
+    "林業":                     ["forest logging timber", "tree plantation forestry"],
+    "漁業":                     ["fishing boat ocean sea", "fish market seafood fresh"],
+    "鉱業":                     ["mining excavation quarry", "coal mine underground"],
+    "サービス業（他に分類されないもの）": ["business office corporate", "professional consulting meeting", "modern workspace coworking"],
 }
-DEFAULT_STYLE = {"icon": "🏢", "color": "#b8a878", "bg": "#f5f0e6"}
-
-def get_industry_style(industry):
-    return INDUSTRY_STYLE.get(industry, DEFAULT_STYLE)
 
 def fetch_pexels_image(industry, seed):
-    """業種アイコンシステム移行のため、空文字を返す"""
-    return ""
+    """Pexels APIで業種に関連する高品質画像を取得"""
+    queries = INDUSTRY_IMAGE_QUERIES.get(industry, ["business corporate office"])
+    query = queries[seed % len(queries)]
+
+    if not PEXELS_API_KEY:
+        # APIキー未設定時はPicsum（ランダム写真）にフォールバック
+        return f"https://picsum.photos/seed/{seed}/800/450"
+    try:
+        r = requests.get(
+            f"https://api.pexels.com/v1/search?query={query}&per_page=10&page=1&orientation=landscape&size=medium",
+            headers={"Authorization": PEXELS_API_KEY}, timeout=10
+        )
+        photos = r.json().get("photos", [])
+        if photos:
+            # seedを使って同じ業種でも毎回違う画像を選択
+            idx = seed % len(photos)
+            return photos[idx]["src"]["large"]
+    except Exception as e:
+        print(f"  Pexels error: {e}")
+    return f"https://picsum.photos/seed/{seed}/800/450"
 
 # ======================
 # メイン処理
@@ -845,9 +865,6 @@ for i, deal in enumerate(ma_deals[:20]):
 
     pro_title = f"【{industry}】{deal['title']}"
 
-    # 業種スタイル情報
-    ind_style = get_industry_style(industry)
-
     art = {
         "rank":             i + 1,
         "title":            deal["title"],
@@ -857,9 +874,6 @@ for i, deal in enumerate(ma_deals[:20]):
         "source":           deal["source"],
         "industry":         industry,
         "image":            img_url,
-        "ind_icon":         ind_style["icon"],
-        "ind_color":        ind_style["color"],
-        "ind_bg":           ind_style["bg"],
         "article_body":     article_body,
         "analysis_comment": analysis_comment,
         "charts":           charts,
@@ -905,9 +919,6 @@ for f in featured_data:
     featured_yaml += f'    link: "{safe_press}"\n'
     featured_yaml += f'    image: "{f["image"]}"\n'
     featured_yaml += f'    industry: "{safe_industry}"\n'
-    featured_yaml += f'    ind_icon: "{f["ind_icon"]}"\n'
-    featured_yaml += f'    ind_color: "{f["ind_color"]}"\n'
-    featured_yaml += f'    ind_bg: "{f["ind_bg"]}"\n'
     featured_yaml += f'    analysis: "{safe_analysis}"\n'
     featured_yaml += f'    chart_pl: "{chart_pl}"\n'
     featured_yaml += f'    chart_stock: "{chart_stock}"\n'
