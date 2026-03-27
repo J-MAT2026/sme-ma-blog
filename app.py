@@ -24,54 +24,55 @@ GROQ_URL         = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL       = "llama-3.3-70b-versatile"  # 無料・高速・高品質
 
 # ======================
-# 経産省業種分類（主要のみ）
+# 経産省業種分類（優先度順・キーワード拡充）
+# ※ 上から順にマッチするため、具体的な業種を先に配置
 # ======================
-METI_INDUSTRY_MAP = {
-    "農業": ["農業", "農産", "農協"],
-    "林業": ["林業", "木材", "製材"],
-    "漁業": ["漁業", "水産", "養殖"],
-    "鉱業": ["鉱業", "採掘", "石炭"],
-    "食料品製造業": ["食品", "飲料", "食料", "菓子", "乳業", "製糖", "缶詰"],
-    "繊維工業": ["繊維", "紡績", "織物", "アパレル", "縫製"],
-    "化学工業": ["化学", "薬品", "化粧品", "塗料", "接着剤"],
-    "医薬品製造業": ["製薬", "医薬品", "バイオ", "創薬"],
-    "鉄鋼業": ["鉄鋼", "製鉄", "鉄板", "特殊鋼"],
-    "非鉄金属製造業": ["非鉄金属", "アルミ", "銅", "亜鉛"],
-    "機械器具製造業": ["機械", "産業機械", "工作機械", "ロボット"],
-    "電気機械器具製造業": ["電機", "電気機器", "半導体", "電子部品"],
-    "情報通信機械器具製造業": ["通信機器", "スマートフォン", "PC"],
-    "自動車・同附属品製造業": ["自動車", "カーパーツ", "車体"],
-    "建設業": ["建設", "ゼネコン", "工事", "土木", "建築"],
-    "電気・ガス・熱供給・水道業": ["電力", "ガス", "エネルギー", "電気"],
-    "通信業": ["通信", "電話", "携帯", "インターネット", "ISP"],
-    "放送業": ["放送", "テレビ", "ラジオ", "メディア"],
-    "情報サービス業": ["IT", "ソフトウェア", "SaaS", "クラウド", "DX", "システム", "AI"],
-    "インターネット附随サービス業": ["EC", "ネット", "プラットフォーム", "フィンテック"],
-    "運輸業": ["運輸", "物流", "配送", "トラック", "航空", "海運", "倉庫"],
-    "卸売業": ["卸売", "商社", "流通"],
-    "小売業": ["小売", "スーパー", "コンビニ", "百貨店", "ドラッグストア"],
-    "銀行業": ["銀行", "信託", "信用金庫"],
-    "証券・商品先物取引業": ["証券", "先物", "FX"],
-    "保険業": ["保険", "損保", "生保"],
-    "その他金融業": ["ファンド", "リース", "ファクタリング", "投資"],
-    "不動産業": ["不動産", "住宅", "マンション", "賃貸", "REIT"],
-    "宿泊業": ["ホテル", "旅館", "宿泊"],
-    "飲食サービス業": ["飲食", "レストラン", "カフェ", "外食", "フードサービス"],
-    "医療業": ["病院", "クリニック", "医療", "診療"],
-    "介護・社会福祉業": ["介護", "福祉", "高齢者"],
-    "教育・学習支援業": ["教育", "学習", "学校", "塾"],
-    "娯楽業": ["ゲーム", "エンタメ", "映画", "音楽", "アミューズメント"],
-    "廃棄物処理業": ["廃棄物", "ごみ処理", "リサイクル", "環境処理", "廃液", "産廃", "一般廃棄物"],
-    "警備・メンテナンス業": ["メンテナンス", "保守", "点検", "警備", "施設管理", "ビル管理"],
-    "消防・防災設備業": ["消防", "防災", "防火", "スプリンクラー"],
-    "広告・マーケティング業": ["広告", "マーケティング", "PR", "プロモーション", "リスティング", "SNS広告"],
-    "人材サービス業": ["人材", "派遣", "採用", "HR", "転職"],
-    "教育・学習支援業": ["教育", "学習", "学校", "塾", "スクール", "保育", "学童"],
-    "サービス業（他に分類されないもの）": ["サービス", "コンサル", "その他"],
-}
+METI_INDUSTRY_MAP = [
+    ("医薬品製造業",         ["製薬", "医薬品", "バイオ", "創薬", "新薬", "治験", "睡眠障害"]),
+    ("医療業",               ["病院", "クリニック", "医療", "診療", "歯科", "医療法人"]),
+    ("介護・社会福祉業",     ["介護", "福祉", "高齢者", "デイサービス", "保育園", "学童"]),
+    ("廃棄物処理業",         ["廃棄物", "ごみ処理", "リサイクル", "環境処理", "廃液", "産廃", "一般廃棄物", "焼却"]),
+    ("消防・防災設備業",     ["消防", "防災", "防火", "スプリンクラー", "防災社"]),
+    ("食料品製造業",         ["食品", "飲料", "食料", "菓子", "乳業", "製糖", "缶詰", "水産加工", "醸造"]),
+    ("飲食サービス業",       ["飲食", "レストラン", "カフェ", "外食", "フードサービス", "食堂", "居酒屋"]),
+    ("建設業",               ["建設", "ゼネコン", "工事", "土木", "建築", "リフォーム", "設備工事"]),
+    ("木材・木製品製造業",   ["木材", "製材", "集成材", "合板", "建材", "造作材", "木構造"]),
+    ("鉄鋼業",               ["鉄鋼", "製鉄", "鉄板", "特殊鋼"]),
+    ("非鉄金属製造業",       ["非鉄金属", "アルミ", "銅", "亜鉛", "貴金属", "金銀"]),
+    ("機械器具製造業",       ["機械", "産業機械", "工作機械", "ロボット", "バルブ", "ポンプ", "流体制御", "真空"]),
+    ("電気機械器具製造業",   ["電機", "電気機器", "半導体", "電子部品", "熱交換器"]),
+    ("自動車・同附属品製造業", ["自動車", "カーパーツ", "車体"]),
+    ("化学工業",             ["化学", "薬品", "化粧品", "塗料", "接着剤", "スキンケア", "コスメ"]),
+    ("繊維工業",             ["繊維", "紡績", "織物", "アパレル", "縫製", "衣料品"]),
+    ("広告・マーケティング業", ["広告", "マーケティング", "PR", "プロモーション", "リスティング", "SNS広告"]),
+    ("人材サービス業",       ["人材", "派遣", "採用", "HR", "転職", "求人", "キャリア", "進路"]),
+    ("教育・学習支援業",     ["教育", "学習", "学校", "塾", "スクール", "進学"]),
+    ("情報サービス業",       ["IT", "ソフトウェア", "SaaS", "クラウド", "DX", "システム開発", "AI", "SIer", "受託開発"]),
+    ("インターネット附随サービス業", ["EC", "ネット通販", "プラットフォーム", "フィンテック", "Shopify", "ECサイト"]),
+    ("通信業",               ["通信", "電話", "携帯", "ISP"]),
+    ("放送業",               ["放送", "テレビ", "ラジオ"]),
+    ("電気・ガス・熱供給・水道業", ["電力", "ガス", "エネルギー", "発電", "水力発電"]),
+    ("運輸業",               ["運輸", "物流", "配送", "トラック", "航空", "海運", "倉庫"]),
+    ("卸売業",               ["卸売", "商社", "流通", "輸入卸"]),
+    ("小売業",               ["小売", "スーパー", "コンビニ", "百貨店", "ドラッグストア", "OA機器販売"]),
+    ("不動産業",             ["不動産", "住宅", "マンション", "賃貸", "REIT"]),
+    ("銀行業",               ["銀行", "信託", "信用金庫", "持株会社設立"]),
+    ("証券・商品先物取引業", ["証券", "先物", "FX"]),
+    ("保険業",               ["保険", "損保", "生保"]),
+    ("その他金融業",         ["ファンド", "リース", "ファクタリング", "投資", "MBO", "TOB"]),
+    ("宿泊業",               ["ホテル", "旅館", "宿泊"]),
+    ("娯楽業",               ["ゲーム", "エンタメ", "映画", "音楽", "アミューズメント", "カラオケ"]),
+    ("警備・メンテナンス業", ["メンテナンス", "保守", "点検", "警備", "施設管理", "ビル管理"]),
+    ("農業",                 ["農業", "農産", "農協", "農場"]),
+    ("林業",                 ["林業"]),
+    ("漁業",                 ["漁業", "養殖"]),
+    ("鉱業",                 ["鉱業", "採掘", "石炭"]),
+    ("サービス業（他に分類されないもの）", ["コンサル"]),
+]
 
 def detect_meti_industry(text):
-    for industry, keywords in METI_INDUSTRY_MAP.items():
+    """業種を検出（優先度リストの上から順にマッチ）"""
+    for industry, keywords in METI_INDUSTRY_MAP:
         if any(k in text for k in keywords):
             return industry
     return "サービス業（他に分類されないもの）"
@@ -501,9 +502,12 @@ def groq_generate(prompt):
         }
         payload = {
             "model": GROQ_MODEL,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [
+                {"role": "system", "content": "あなたはM&A専門メディアのシニアアナリストです。正確で簡潔な日本語で出力してください。Markdown形式で出力し、余計なメタコメントや注釈は一切含めないでください。"},
+                {"role": "user", "content": prompt}
+            ],
             "max_tokens": 2000,
-            "temperature": 0.5,
+            "temperature": 0.4,
         }
         r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=45)
         result = r.json()
@@ -512,10 +516,31 @@ def groq_generate(prompt):
             return ""
         choices = result.get("choices", [])
         if choices:
-            return choices[0].get("message", {}).get("content", "").strip()
+            text = choices[0].get("message", {}).get("content", "").strip()
+            return clean_llm_output(text)
     except Exception as e:
         print(f"  Groq API error: {e}")
     return ""
+
+def clean_llm_output(text):
+    """LLM出力のクリーンアップ"""
+    if not text:
+        return ""
+    # ゴミテキスト・コードブロック記号の除去
+    text = re.sub(r'```[\w]*\n?', '', text)
+    text = re.sub(r'_v\d+\b', '', text)
+    text = re.sub(r'\*\*注[：:]?\*\*.*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'【?注[）\)]?】?.*$', '', text, flags=re.MULTILINE)
+    # PMI の誤った展開を修正
+    text = re.sub(r'PMI\s*[\(（]\s*Performance\s+Metrics?\s+and\s+Indicators?\s*[\)）]',
+                  'PMI（Post Merger Integration：買収後統合）', text, flags=re.IGNORECASE)
+    text = re.sub(r'PMI\s*[\(（]\s*ポストマージン統合\s*[\)）]',
+                  'PMI（Post Merger Integration：買収後統合）', text)
+    # 連続改行の整理
+    text = re.sub(r'\n{4,}', '\n\n\n', text)
+    # 先頭の空行を削除
+    text = text.strip()
+    return text
 
 # 後方互換のためエイリアスを定義
 def claude_generate(prompt):
@@ -649,39 +674,52 @@ def generate_analysis_comment(deal, financials, text_blocks, companies, press_te
     return gemini_generate(prompt)
 
 # ======================
-# Pexels画像取得
+# 業種別アイコン・カラーシステム（Pexels写真を廃止）
 # ======================
+INDUSTRY_STYLE = {
+    "情報サービス業":           {"icon": "💻", "color": "#2563eb", "bg": "#dbeafe"},
+    "インターネット附随サービス業": {"icon": "🌐", "color": "#7c3aed", "bg": "#ede9fe"},
+    "通信業":                   {"icon": "📡", "color": "#0891b2", "bg": "#cffafe"},
+    "建設業":                   {"icon": "🏗️", "color": "#d97706", "bg": "#fef3c7"},
+    "不動産業":                 {"icon": "🏢", "color": "#059669", "bg": "#d1fae5"},
+    "医薬品製造業":             {"icon": "💊", "color": "#dc2626", "bg": "#fee2e2"},
+    "医療業":                   {"icon": "🏥", "color": "#e11d48", "bg": "#ffe4e6"},
+    "食料品製造業":             {"icon": "🍽️", "color": "#ea580c", "bg": "#ffedd5"},
+    "飲食サービス業":           {"icon": "🍳", "color": "#ea580c", "bg": "#ffedd5"},
+    "機械器具製造業":           {"icon": "⚙️", "color": "#4b5563", "bg": "#e5e7eb"},
+    "電気機械器具製造業":       {"icon": "🔌", "color": "#1d4ed8", "bg": "#dbeafe"},
+    "化学工業":                 {"icon": "🧪", "color": "#7c3aed", "bg": "#ede9fe"},
+    "広告・マーケティング業":   {"icon": "📢", "color": "#c026d3", "bg": "#fae8ff"},
+    "人材サービス業":           {"icon": "👥", "color": "#0d9488", "bg": "#ccfbf1"},
+    "教育・学習支援業":         {"icon": "📚", "color": "#4f46e5", "bg": "#e0e7ff"},
+    "その他金融業":             {"icon": "💰", "color": "#b45309", "bg": "#fef3c7"},
+    "銀行業":                   {"icon": "🏦", "color": "#1e40af", "bg": "#dbeafe"},
+    "小売業":                   {"icon": "🛒", "color": "#16a34a", "bg": "#dcfce7"},
+    "卸売業":                   {"icon": "📦", "color": "#78716c", "bg": "#f5f5f4"},
+    "運輸業":                   {"icon": "🚚", "color": "#0369a1", "bg": "#e0f2fe"},
+    "廃棄物処理業":             {"icon": "♻️", "color": "#15803d", "bg": "#dcfce7"},
+    "木材・木製品製造業":       {"icon": "🪵", "color": "#92400e", "bg": "#fef3c7"},
+    "繊維工業":                 {"icon": "🧵", "color": "#9333ea", "bg": "#f3e8ff"},
+    "娯楽業":                   {"icon": "🎮", "color": "#e11d48", "bg": "#ffe4e6"},
+    "警備・メンテナンス業":     {"icon": "🔧", "color": "#525252", "bg": "#e5e7eb"},
+    "消防・防災設備業":         {"icon": "🚒", "color": "#dc2626", "bg": "#fee2e2"},
+    "介護・社会福祉業":        {"icon": "🤝", "color": "#0d9488", "bg": "#ccfbf1"},
+    "宿泊業":                   {"icon": "🏨", "color": "#6d28d9", "bg": "#ede9fe"},
+    "鉄鋼業":                   {"icon": "🔩", "color": "#57534e", "bg": "#e7e5e4"},
+    "非鉄金属製造業":           {"icon": "⛏️", "color": "#a16207", "bg": "#fefce8"},
+    "自動車・同附属品製造業":   {"icon": "🚗", "color": "#1e3a5f", "bg": "#dbeafe"},
+    "電気・ガス・熱供給・水道業": {"icon": "⚡", "color": "#ca8a04", "bg": "#fef9c3"},
+    "農業":                     {"icon": "🌾", "color": "#65a30d", "bg": "#ecfccb"},
+    "保険業":                   {"icon": "🛡️", "color": "#0f766e", "bg": "#ccfbf1"},
+}
+DEFAULT_STYLE = {"icon": "🏢", "color": "#b8a878", "bg": "#f5f0e6"}
+
+def get_industry_style(industry):
+    return INDUSTRY_STYLE.get(industry, DEFAULT_STYLE)
+
 def fetch_pexels_image(industry, seed):
-    query_map = {
-        "情報サービス業":          "technology office business",
-        "銀行業":                  "finance bank building",
-        "保険業":                  "insurance business meeting",
-        "医薬品製造業":            "pharmaceutical laboratory",
-        "食料品製造業":            "food manufacturing factory",
-        "建設業":                  "construction building",
-        "不動産業":                "real estate property",
-        "電気・ガス・熱供給・水道業": "energy power plant",
-        "運輸業":                  "logistics transportation",
-        "小売業":                  "retail store shopping",
-        "飲食サービス業":          "restaurant food service",
-        "医療業":                  "hospital healthcare medical",
-        "自動車・同附属品製造業":   "automotive manufacturing",
-        "電気機械器具製造業":      "electronics semiconductor",
-    }
-    query = query_map.get(industry, "business merger acquisition")
-    if not PEXELS_API_KEY:
-        return f"https://picsum.photos/seed/{seed}/800/450"
-    try:
-        r = requests.get(
-            f"https://api.pexels.com/v1/search?query={query}&per_page=5&page={(seed%3)+1}&orientation=landscape",
-            headers={"Authorization": PEXELS_API_KEY}, timeout=10
-        )
-        photos = r.json().get("photos",[])
-        if photos:
-            return photos[seed % len(photos)]["src"]["large"]
-    except Exception as e:
-        print(f"  Pexels error: {e}")
-    return f"https://picsum.photos/seed/{seed}/800/450"
+    """業種アイコンシステム移行のため、空文字を返す"""
+    return ""
 
 # ======================
 # メイン処理
@@ -807,6 +845,9 @@ for i, deal in enumerate(ma_deals[:20]):
 
     pro_title = f"【{industry}】{deal['title']}"
 
+    # 業種スタイル情報
+    ind_style = get_industry_style(industry)
+
     art = {
         "rank":             i + 1,
         "title":            deal["title"],
@@ -816,6 +857,9 @@ for i, deal in enumerate(ma_deals[:20]):
         "source":           deal["source"],
         "industry":         industry,
         "image":            img_url,
+        "ind_icon":         ind_style["icon"],
+        "ind_color":        ind_style["color"],
+        "ind_bg":           ind_style["bg"],
         "article_body":     article_body,
         "analysis_comment": analysis_comment,
         "charts":           charts,
@@ -861,6 +905,9 @@ for f in featured_data:
     featured_yaml += f'    link: "{safe_press}"\n'
     featured_yaml += f'    image: "{f["image"]}"\n'
     featured_yaml += f'    industry: "{safe_industry}"\n'
+    featured_yaml += f'    ind_icon: "{f["ind_icon"]}"\n'
+    featured_yaml += f'    ind_color: "{f["ind_color"]}"\n'
+    featured_yaml += f'    ind_bg: "{f["ind_bg"]}"\n'
     featured_yaml += f'    analysis: "{safe_analysis}"\n'
     featured_yaml += f'    chart_pl: "{chart_pl}"\n'
     featured_yaml += f'    chart_stock: "{chart_stock}"\n'

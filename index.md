@@ -18,16 +18,15 @@ title: J-MAT | 日本最大級M&Aニュース
       {% assign f = featured[0] %}
       <div class="featured-card featured-card--main">
         <a href="{{ site.baseurl }}{{ latest.url }}" class="featured-card-link">
-          <div class="featured-img-wrap">
-            <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
-                 onerror="this.src='https://picsum.photos/seed/10/800/450'">
-            <div class="featured-cat">{{ f.industry }}</div>
+          <div class="featured-icon-header" style="background: {{ f.ind_bg | default: '#f5f0e6' }};">
+            <span class="featured-icon-emoji">{{ f.ind_icon | default: '🏢' }}</span>
+            <div class="featured-cat" style="background: {{ f.ind_color | default: '#b8a878' }};">{{ f.industry }}</div>
             <div class="featured-rank">#1</div>
           </div>
           <div class="featured-body">
             <div class="featured-title">{{ f.title }}</div>
             {% if f.analysis %}
-            <div class="featured-analysis">📊 {{ f.analysis | truncate: 120 }}</div>
+            <div class="featured-analysis">📊 {{ f.analysis | truncate: 160 }}</div>
             {% endif %}
             {% if f.chart_pl != "" %}
             <div class="featured-charts">
@@ -45,16 +44,15 @@ title: J-MAT | 日本最大級M&Aニュース
           {% if f.rank >= 2 %}
           <div class="featured-card featured-card--sub">
             <a href="{{ f.link }}" target="_blank" rel="noopener">
-              <div class="featured-img-wrap">
-                <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
-                     onerror="this.src='https://picsum.photos/seed/{{ f.rank }}0/800/450'">
-                <div class="featured-cat">{{ f.industry }}</div>
+              <div class="featured-icon-header featured-icon-header--small" style="background: {{ f.ind_bg | default: '#f5f0e6' }};">
+                <span class="featured-icon-emoji featured-icon-emoji--small">{{ f.ind_icon | default: '🏢' }}</span>
+                <div class="featured-cat" style="background: {{ f.ind_color | default: '#b8a878' }};">{{ f.industry }}</div>
                 <div class="featured-rank">#{{ f.rank }}</div>
               </div>
               <div class="featured-body">
                 <div class="featured-title">{{ f.title }}</div>
                 {% if f.analysis %}
-                <div class="featured-analysis-mini">{{ f.analysis | truncate: 60 }}</div>
+                <div class="featured-analysis-mini">{{ f.analysis | truncate: 80 }}</div>
                 {% endif %}
               </div>
             </a>
