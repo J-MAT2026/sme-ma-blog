@@ -89,8 +89,8 @@ title: J-MAT | 日本最大級M&Aニュース
         {% if post.headlines %}
           {% for h in post.headlines %}
           <a href="{{ h.link }}" class="headline-item" target="_blank" rel="noopener">
-            <span class="headline-cat">{{ h.industry | truncate: 8, "" }}</span>
-            <span class="headline-text">{{ h.title | truncate: 42 }}</span>
+            <span class="headline-cat">{{ h.industry | truncate: 14, "" }}</span>
+            <span class="headline-text">{{ h.title }}</span>
             <span class="headline-arrow">↗</span>
           </a>
           {% endfor %}

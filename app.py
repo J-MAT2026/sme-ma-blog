@@ -782,7 +782,7 @@ for i, deal in enumerate(ma_deals[:20]):
     else:
         action = "M&A"
 
-    pro_title = f"【{industry}】{deal['title'][:40]}"
+    pro_title = f"【{industry}】{deal['title']}"
 
     art = {
         "rank":             i + 1,
