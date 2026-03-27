@@ -491,35 +491,53 @@ def generate_charts(financials, stock_prices, company_name):
 # Gemini APIで記事生成
 # ======================
 def groq_generate(prompt):
-    """Groq APIで記事・分析コメントを生成（無料・高速）"""
+    """Groq APIで記事・分析コメントを生成（リトライ付き）"""
     if not GROQ_API_KEY:
         print("  Groq API: APIキー未設定")
         return ""
-    try:
-        headers = {
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "model": GROQ_MODEL,
-            "messages": [
-                {"role": "system", "content": "あなたはM&A専門メディアのシニアアナリストです。正確で簡潔な日本語で出力してください。Markdown形式で出力し、余計なメタコメントや注釈は一切含めないでください。"},
-                {"role": "user", "content": prompt}
-            ],
-            "max_tokens": 3000,
-            "temperature": 0.4,
-        }
-        r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=45)
-        result = r.json()
-        if "error" in result:
-            print(f"  Groq error: {result['error'].get('message','')[:100]}")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            headers = {
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": GROQ_MODEL,
+                "messages": [
+                    {"role": "system", "content": "あなたはM&A専門メディアのシニアアナリストです。正確で簡潔な日本語で出力してください。Markdown形式で出力し、余計なメタコメントや注釈は一切含めないでください。"},
+                    {"role": "user", "content": prompt}
+                ],
+                "max_tokens": 3000,
+                "temperature": 0.4,
+            }
+            r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60)
+            result = r.json()
+            if "error" in result:
+                err_msg = result['error'].get('message', '')
+                print(f"  Groq error (attempt {attempt+1}): {err_msg[:100]}")
+                if "rate_limit" in err_msg.lower() or "too many" in err_msg.lower() or result['error'].get('code') == 'rate_limit_exceeded':
+                    wait = 15 * (attempt + 1)
+                    print(f"  レート制限 → {wait}秒待機中...")
+                    time.sleep(wait)
+                    continue
+                return ""
+            choices = result.get("choices", [])
+            if choices:
+                text = choices[0].get("message", {}).get("content", "").strip()
+                # finish_reasonがlengthの場合はトークン不足で途中切れ
+                finish = choices[0].get("finish_reason", "")
+                if finish == "length":
+                    print(f"  ⚠️ トークン上限で途中切れ（finish_reason=length）")
+                return clean_llm_output(text)
+        except requests.exceptions.Timeout:
+            print(f"  Groq timeout (attempt {attempt+1})")
+            time.sleep(10)
+            continue
+        except Exception as e:
+            print(f"  Groq API error: {e}")
             return ""
-        choices = result.get("choices", [])
-        if choices:
-            text = choices[0].get("message", {}).get("content", "").strip()
-            return clean_llm_output(text)
-    except Exception as e:
-        print(f"  Groq API error: {e}")
+    print("  Groq API: 全リトライ失敗")
     return ""
 
 def clean_llm_output(text):
@@ -1092,6 +1110,7 @@ for art in featured_data:
         art["companies"][0].get("analysis", {}) if art.get("companies") else {},
         art.get("text_blocks", {})
     )
+    time.sleep(3)  # レート制限回避
 
     print(f"  LLM分析コメント生成中...")
     art["analysis_comment"] = generate_analysis_comment(
@@ -1101,7 +1120,7 @@ for art in featured_data:
         art.get("companies", []),
         art.get("press_text", "")
     )
-    time.sleep(1)
+    time.sleep(5)  # レート制限回避のため5秒待機
 
 # ======================
 # 記事ページ（_posts）生成
