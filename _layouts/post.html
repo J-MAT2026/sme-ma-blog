@@ -1,6 +1,17 @@
 ---
 layout: default
 ---
+{% if page.featured %}
+  {% assign hero = page.featured | first %}
+  {% if hero.image and hero.image != "" %}
+  <div class="post-hero-img-wrap">
+    <img src="{{ hero.image }}" alt="{{ page.title }}" class="post-hero-img"
+         onerror="this.parentNode.style.display='none'">
+    <div class="post-hero-overlay"></div>
+  </div>
+  {% endif %}
+{% endif %}
+
 <div class="post-header">
   <a href="{{ site.baseurl }}/" class="back-link">← ニュース一覧に戻る</a>
   <div class="post-tag-large">M&Aニュース</div>
