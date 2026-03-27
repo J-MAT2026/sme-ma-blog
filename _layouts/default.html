@@ -34,27 +34,38 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* TICKER */
-    .ticker-bar {
+    /* STATIC HEADER BAR (replaces ticker) */
+    .static-bar {
       background: var(--black-soft);
       border-bottom: 1px solid var(--border);
-      padding: 7px 0;
-      overflow: hidden;
+      padding: 8px 0;
+    }
+    .static-bar-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .static-bar-item {
+      font-size: 10px;
+      letter-spacing: 2.5px;
+      color: var(--silver-dim);
+      font-weight: 400;
+      text-transform: uppercase;
       white-space: nowrap;
     }
-    .ticker-inner {
-      display: inline-block;
-      animation: ticker 35s linear infinite;
-      font-size: 11px;
-      letter-spacing: 2px;
-      color: var(--silver-dim);
-      font-weight: 300;
-      padding-left: 100vw;
+    .static-bar-sep {
+      color: var(--gold);
+      font-size: 8px;
+      opacity: 0.6;
     }
-    .ticker-inner span { color: var(--gold); margin: 0 8px; }
-    @keyframes ticker {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
+    @media (max-width: 640px) {
+      .static-bar-inner { gap: 10px; }
+      .static-bar-item { font-size: 9px; letter-spacing: 1.5px; }
     }
 
     /* HEADER */
@@ -686,12 +697,16 @@
       flex-shrink: 0;
       margin-top: 2px;
       letter-spacing: 0.5px;
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .headline-text {
       font-size: 12px;
       color: #333;
       line-height: 1.6;
       flex: 1;
+      word-break: break-word;
     }
     .headline-arrow {
       font-size: 10px;
@@ -770,14 +785,65 @@
       margin: 16px 0;
       border: 1px solid rgba(0,0,0,0.08);
     }
+
+    /* FOOTER LINKS */
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .footer-link {
+      font-size: 10px;
+      color: var(--silver-dim);
+      text-decoration: none;
+      letter-spacing: 1px;
+      border-bottom: 1px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .footer-link:hover {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+
+    /* DISCLAIMER PAGE */
+    .disclaimer-page .post-heading {
+      margin-bottom: 24px;
+    }
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+    }
+    .info-table th,
+    .info-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      font-size: 13px;
+      text-align: left;
+    }
+    .info-table th {
+      width: 140px;
+      color: #888;
+      font-weight: 500;
+      background: #faf9f7;
+    }
+    .info-table td {
+      color: #333;
+    }
   </style>
 </head>
 <body>
 
-<div class="ticker-bar">
-  <span class="ticker-inner">
-    M&A DAILY <span>◆</span> 企業買収・合併・資本提携の最新情報 <span>◆</span> JAPAN M&A TIMES <span>◆</span> 毎朝9時更新 <span>◆</span> 買収 <span>◆</span> 合併 <span>◆</span> TOB <span>◆</span> MBO <span>◆</span> 資本提携 <span>◆</span> M&A DAILY <span>◆</span> 企業買収・合併・資本提携の最新情報 <span>◆</span> JAPAN M&A TIMES <span>◆</span> 毎朝9時更新 <span>◆</span> 買収 <span>◆</span> 合併 <span>◆</span> TOB <span>◆</span> MBO <span>◆</span> 資本提携 <span>◆</span>
-  </span>
+<div class="static-bar">
+  <div class="static-bar-inner">
+    <span class="static-bar-item">M&A Daily</span>
+    <span class="static-bar-sep">◆</span>
+    <span class="static-bar-item">企業買収・合併・資本提携</span>
+    <span class="static-bar-sep">◆</span>
+    <span class="static-bar-item">毎朝9時更新</span>
+    <span class="static-bar-sep">◆</span>
+    <span class="static-bar-item">TOB・MBO・資本提携</span>
+  </div>
 </div>
 
 <header class="site-header">
@@ -811,6 +877,9 @@
   <div class="footer-inner">
     <img src="{{ site.baseurl }}/assets/jmat_white_logo.png" class="footer-logo"
          onerror="this.style.display='none'">
+    <div class="footer-links">
+      <a href="{{ site.baseurl }}/disclaimer" class="footer-link">免責事項・運営者情報</a>
+    </div>
     <div class="footer-text">
       本サイトの情報は各種RSSフィードより自動収集しています。<br>
       投資判断は自己責任でお願いします。© J-MAT JAPAN M&A TIMES
