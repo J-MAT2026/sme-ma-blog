@@ -502,8 +502,8 @@ def groq_generate(prompt):
         payload = {
             "model": GROQ_MODEL,
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 1000,
-            "temperature": 0.7,
+            "max_tokens": 2000,
+            "temperature": 0.5,
         }
         r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=45)
         result = r.json()
@@ -525,18 +525,22 @@ def gemini_generate(prompt, retry=1):
     return groq_generate(prompt)
 
 def generate_article(deal, press_text, financials, analysis, text_blocks):
-    """Geminiでオリジナル記事を生成"""
+    """LLMでプロ水準のM&A分析記事を生成（一次情報ベース）"""
 
+    # --- 財務サマリー構築 ---
     fin_summary = ""
     if financials:
-        latest = financials[-1] if isinstance(financials, list) else financials
-        rev = latest.get("revenue",0) or 0
-        oi  = latest.get("operating_income",0) or 0
-        ni  = latest.get("net_income",0) or 0
-        fin_summary = f"直近売上高: {rev/1e8:.0f}億円 / 営業利益: {oi/1e8:.0f}億円 / 純利益: {ni/1e8:.0f}億円"
+        for f in financials[-3:]:  # 直近3年分
+            fy  = f.get("fiscal_year","")
+            rev = (f.get("revenue",0) or 0) / 1e8
+            oi  = (f.get("operating_income",0) or 0) / 1e8
+            ni  = (f.get("net_income",0) or 0) / 1e8
+            ta  = (f.get("total_assets",0) or 0) / 1e8
+            eq  = (f.get("equity",0) or 0) / 1e8
+            fin_summary += f"FY{fy}: 売上{rev:.1f}億円 / 営業利益{oi:.1f}億円 / 純利益{ni:.1f}億円 / 総資産{ta:.1f}億円 / 純資産{eq:.1f}億円\n"
 
+    # --- 事業計画テキスト ---
     biz_plan = ""
-    # text_blocksがlistの場合はdictに変換
     if isinstance(text_blocks, list):
         tb_dict = {}
         for item in text_blocks:
@@ -551,41 +555,47 @@ def generate_article(deal, press_text, financials, analysis, text_blocks):
                 break
 
     credit = analysis.get("credit_score","") if analysis else ""
-    ai_view = analysis.get("ai_comment","") if analysis else ""
 
-    # プレスリリーステキストがある場合のプロンプト
+    # --- プレスリリース情報 ---
     if press_text and len(press_text) > 100:
-        info_section = f"【適時開示・プレスリリース】\n{press_text[:1000]}"
+        info_section = f"【適時開示・プレスリリース本文】\n{press_text[:1500]}"
     else:
-        info_section = "【注】一次情報なし。案件タイトルと財務データのみで分析。"
+        info_section = "【注】適時開示PDFの取得不可。タイトル情報のみで分析してください。"
 
-    prompt = f"""あなたはM&A専門メディアJ-MATの記者です。以下の案件について日本語で記事を書いてください。
+    # --- タイトルから数値情報を抽出（プレスリリースがない場合の補完） ---
+    title_nums = re.findall(r'[\d,]+(?:万|億|百万)?円?', deal['title'] + " " + (press_text[:500] if press_text else ""))
+    nums_info = f"テキスト内の数値: {', '.join(title_nums[:10])}" if title_nums else ""
+
+    prompt = f"""あなたはM&A専門メディア「J-MAT」のシニアアナリストです。
+一次情報に基づき、プロの投資家・経営者が読む分析記事を執筆してください。
 
 【案件名】{deal['title']}
 {info_section}
-【財務情報】{fin_summary if fin_summary else 'データなし'} 財務スコア:{credit if credit else 'N/A'}/100
-【有報の事業計画】{biz_plan[:300] if biz_plan else 'データなし'}
+{f'【買い手の財務データ（直近3年）】{chr(10)}{fin_summary}' if fin_summary else '【財務データ】EDINETから取得できず。プレスリリース内の数値を使用してください。'}
+{f'【信用スコア】{credit}/100' if credit else ''}
+{f'【中期経営計画・事業方針】{biz_plan[:400]}' if biz_plan else ''}
+{nums_info}
 
-次の4セクション形式で出力してください（各セクション100-200字）：
+以下の4セクションで出力してください。Markdown見出し（##）で区切ること。
+※ プレスリリースに記載の具体的数値（取得価額、売上高、営業利益、純資産、取得比率、取得日など）を可能な限り引用すること。
+※ 数値が不明な場合は「非公表」と明記し、推測で補わないこと。
 
 ## 案件概要
-（買い手・売り手・スキーム・取引規模を簡潔に）
+（買い手・売り手の正式名称、証券コード、スキーム（株式取得/事業譲渡/TOB等）、取得比率、取得価額、取得予定日を整理。売り手の直近業績（売上高・営業利益・純資産）があれば必ず記載。）
 
 ## 戦略的背景
-（なぜこの買収か、業界環境、シナジー）
+（買い手がこの買収を行う理由を一次情報から分析。業界の構造変化、対象企業の強み・ポジション、期待されるシナジー効果を具体的に論述。）
 
 ## 事業計画との整合性
-（中期計画・M&A方針との関連、具体的数値があれば引用）
+（中期経営計画でのM&A方針・数値目標との整合性。過去のM&A実績との比較。財務的な買収余力（自己資本比率等）への言及。データがない場合はその旨を明記。）
 
 ## J-MAT総合評価
-（この案件の注目ポイント・今後の展望）"""
+（本案件の戦略的意義を総括。買収プレミアムの妥当性、PMI（買収後統合）の課題、今後のウォッチポイントを専門家目線で指摘。）"""
 
     return gemini_generate(prompt)
 
-def generate_analysis_comment(deal, financials, text_blocks, companies):
-    """財務分析コメントをGeminiで生成"""
-    if not financials and not text_blocks:
-        return ""
+def generate_analysis_comment(deal, financials, text_blocks, companies, press_text=""):
+    """財務分析コメントをLLMで生成（EDINETDB不要のフォールバック対応）"""
 
     fin_text = ""
     for f in financials[:5]:
@@ -593,7 +603,8 @@ def generate_analysis_comment(deal, financials, text_blocks, companies):
         rev = (f.get("revenue",0) or 0) / 1e8
         oi  = (f.get("operating_income",0) or 0) / 1e8
         ni  = (f.get("net_income",0) or 0) / 1e8
-        fin_text += f"FY{fy}: 売上{rev:.0f}億 営業利益{oi:.0f}億 純利益{ni:.0f}億\n"
+        eq  = (f.get("equity",0) or 0) / 1e8
+        fin_text += f"FY{fy}: 売上{rev:.1f}億 営業利益{oi:.1f}億 純利益{ni:.1f}億 純資産{eq:.1f}億\n"
 
     biz_plan = ""
     if isinstance(text_blocks, list):
@@ -611,20 +622,29 @@ def generate_analysis_comment(deal, financials, text_blocks, companies):
 
     company_names = " / ".join([c.get("name","") for c in companies if c])
 
-    prompt = f"""M&A専門アナリストとして、以下の財務データをもとに分析コメントを200-300字で書いてください。
+    # プレスリリースから数値を抽出
+    press_nums = ""
+    if press_text:
+        nums = re.findall(r'(?:売上高|営業利益|純利益|純資産|取得価額|取得価格)[\s:：は]*[\d,\.]+(?:万|百万|億)?円?', press_text[:1500])
+        if nums:
+            press_nums = "プレスリリース記載の数値: " + " / ".join(nums[:8])
 
-案件: {deal['title']}
-対象企業: {company_names}
-直近財務:
-{fin_text if fin_text else 'データなし'}
-事業計画: {biz_plan[:400] if biz_plan else 'データなし'}
+    prompt = f"""M&A専門アナリストとして、以下のデータに基づき財務分析コメントを書いてください。
 
-【分析の観点】
-1. 中期経営計画のM&A数値目標との整合性
-2. 財務的な買収余力（自己資本・純有利子負債）
-3. 買収後の業績への影響見通し
+【案件】{deal['title']}
+【対象企業】{company_names if company_names else '不明'}
+{f'【EDINET財務データ（直近5年）】{chr(10)}{fin_text}' if fin_text else '【EDINET財務データ】取得不可'}
+{f'【中期経営計画】{biz_plan[:400]}' if biz_plan else ''}
+{press_nums}
 
-専門家視点で簡潔に論述してください。"""
+【出力ルール】
+- 250〜350字で出力
+- 必ず以下3点に言及すること：
+  ① 買い手の財務的な買収余力（データがあれば自己資本比率・ネットDEレシオに言及、なければプレスリリースの数値を使用）
+  ② 売り手の収益性（営業利益率・売上規模から妥当性を評価）
+  ③ 今後の注目点（PMI・のれん計上・業績への影響見通し）
+- 数値は一次情報からの引用のみ。不明な場合は「開示情報からは確認できない」と明記
+- 「〜と考えられる」等の推量表現を適切に使い、断定を避ける"""
 
     return gemini_generate(prompt)
 
@@ -752,16 +772,19 @@ for i, deal in enumerate(ma_deals[:20]):
     if financials_all or stock_prices:
         charts = generate_charts(financials_all, stock_prices, main_company)
 
-    # Geminiで記事生成（ピックアップ5件のみ）
+    # LLMで記事・分析コメント生成（ピックアップ5件のみ）
     article_body = ""
     analysis_comment = ""
     if i < 5:
-        print(f"  Groq記事生成中...")
+        print(f"  LLM記事生成中...")
         article_body = generate_article(deal, press_text, financials_all,
                                         companies_data[0].get("analysis",{}) if companies_data else {},
                                         text_blocks_all)
-        if financials_all:
-            analysis_comment = generate_analysis_comment(deal, financials_all, text_blocks_all, companies_data)
+        # 財務データの有無に関わらず分析コメントを生成（プレスリリースの数値で補完）
+        print(f"  LLM分析コメント生成中...")
+        analysis_comment = generate_analysis_comment(
+            deal, financials_all, text_blocks_all, companies_data, press_text
+        )
         time.sleep(1)
 
     # 画像
@@ -854,7 +877,7 @@ for h in headline_data:
 
 # ページタイトル
 main_title   = f"{today_jp}のM&A動向{slot_jp}：注目5案件を財務分析付きで解説"
-page_summary = f"本日{slot_jp}のM&Aニュース。TDnet・公式プレスリリースをもとにGeminiが分析。財務データ・株価チャート付き。"
+page_summary = f"本日{slot_jp}のM&Aニュース。TDnet・公式プレスリリースをもとにAIが分析。財務データ・株価チャート付き。"
 
 # 本文
 body = f"## {slot_jp}の注目5案件\n\n"
