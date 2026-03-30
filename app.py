@@ -1025,40 +1025,11 @@ for i, deal in enumerate(ma_deals[:20]):
     company_names = list(dict.fromkeys(company_names))[:3]
     print(f"  企業名: {company_names}")
 
-    # EDINETDB照合
+    # EDINETDB照合はピックアップ5件確定後に実施（API節約）
     companies_data = []
     financials_all = []
     text_blocks_all = {}
-    sec_codes = []
-
-    for cname in company_names[:2]:
-        co = edinetdb_search(cname)
-        if co:
-            ec   = co.get("edinet_code","")
-            sc   = co.get("sec_code","")
-            fins = edinetdb_financials(ec)
-            ana  = edinetdb_analysis(ec)
-            txts = edinetdb_text_blocks(ec)
-            print(f"  EDINETDB: {co.get('name','')} ({ec}) score={ana.get('credit_score','N/A') if ana else 'N/A'}")
-            companies_data.append({"name": co.get("name",""), "edinet_code": ec, "sec_code": sc, "analysis": ana})
-            if fins:
-                financials_all = fins
-            if txts:
-                text_blocks_all = txts
-            if sc:
-                sec_codes.append(sc)
-        time.sleep(0.5)
-
-    # 株価取得（最初の上場企業）
-    stock_prices = []
-    if sec_codes:
-        stock_prices = fetch_stock_price(sec_codes[0])
-
-    # グラフ生成
     charts = {}
-    main_company = companies_data[0]["name"] if companies_data else deal["title"][:10]
-    if financials_all or stock_prices:
-        charts = generate_charts(financials_all, stock_prices, main_company)
 
     # バリュエーション算出（全案件で実施）
     valuation = calc_valuation(deal['title'], press_text)
@@ -1172,29 +1143,78 @@ for art in headline_data:
         art["rank"] = 0
 
 # ======================
-# ピックアップ5件のLLM記事・分析コメント生成
+# ピックアップ5件のEDINETDB照合・LLM記事・分析コメント生成
 # ======================
-print("\n=== ピックアップ5件のLLM記事生成 ===")
+print("\n=== ピックアップ5件のEDINETDB照合 & LLM記事生成 ===")
 for art in featured_data:
     print(f"\n  [{art['rank']}] {art['pro_title'][:50]}")
 
-    print(f"  LLM記事生成中...")
+    # --- EDINETDB照合（ピックアップ5件のみ） ---
+    company_names_for_edinet = []
+    for pat in [
+        r'([^\s、。「」【】]{2,15}(?:株式会社|ホールディングス|ＨＤ|HD|グループ))',
+        r'((?:株式会社)[^\s、。「」【】]{2,12})',
+        r'([^\s、。「」【】]{3,8}＜\d{4}＞)',
+    ]:
+        company_names_for_edinet.extend(re.findall(pat, art["title"]))
+    company_names_for_edinet = list(dict.fromkeys(company_names_for_edinet))[:2]
+
+    companies_data = []
+    financials_all = []
+    text_blocks_all = {}
+    sec_codes = []
+
+    for cname in company_names_for_edinet:
+        co = edinetdb_search(cname)
+        if co:
+            ec   = co.get("edinet_code","")
+            sc   = co.get("sec_code","")
+            fins = edinetdb_financials(ec)
+            txts = edinetdb_text_blocks(ec)
+            print(f"    EDINETDB: {co.get('name','')} ({ec})")
+            companies_data.append({"name": co.get("name",""), "edinet_code": ec, "sec_code": sc, "analysis": {}})
+            if fins:
+                financials_all = fins
+            if txts:
+                text_blocks_all = txts
+            if sc:
+                sec_codes.append(sc)
+        time.sleep(0.5)
+
+    # 株価取得（最初の上場企業）
+    stock_prices = []
+    if sec_codes:
+        stock_prices = fetch_stock_price(sec_codes[0])
+
+    # グラフ生成
+    main_company = companies_data[0]["name"] if companies_data else art["title"][:10]
+    if financials_all or stock_prices:
+        art["charts"] = generate_charts(financials_all, stock_prices, main_company)
+
+    # EDINETDB結果をartに反映
+    art["companies"]      = companies_data
+    art["financials"]     = financials_all
+    art["text_blocks"]    = text_blocks_all
+    art["has_financials"] = bool(financials_all)
+
+    # --- LLM記事生成 ---
+    print(f"    LLM記事生成中...")
     art["article_body"] = generate_article(
         {"title": art["title"], "url": art["url"]},
         art.get("press_text", ""),
-        art.get("financials", []),
-        art["companies"][0].get("analysis", {}) if art.get("companies") else {},
-        art.get("text_blocks", {})
+        financials_all,
+        companies_data[0].get("analysis", {}) if companies_data else {},
+        text_blocks_all
     )
     time.sleep(3)
 
-    print(f"  LLM分析コメント生成中...")
+    print(f"    LLM分析コメント生成中...")
     deal_for_analysis = {"title": art["title"], "_industry": art.get("industry", "")}
     art["analysis_comment"] = generate_analysis_comment(
         deal_for_analysis,
-        art.get("financials", []),
-        art.get("text_blocks", {}),
-        art.get("companies", []),
+        financials_all,
+        text_blocks_all,
+        companies_data,
         art.get("press_text", "")
     )
 
@@ -1203,14 +1223,15 @@ for art in featured_data:
     time.sleep(5)
 
 # ======================
-# 記事ページ（_posts）生成
+# 記事ページ（_posts）生成 — 個別記事ファイル方式
 # ======================
 os.makedirs("_posts", exist_ok=True)
 os.makedirs("assets/charts", exist_ok=True)
 
-# チャート画像をファイル保存
+# チャート画像をファイル保存 & 個別記事slug生成
 for art in featured_data:
     slug = hashlib.md5(art["title"].encode()).hexdigest()[:8]
+    art["_slug"] = slug
     for chart_type, b64data in art.get("charts",{}).items():
         fname = f"assets/charts/{today_str}-{slot}-{slug}-{chart_type}.png"
         with open(fname, "wb") as f:
@@ -1218,17 +1239,86 @@ for art in featured_data:
         art[f"chart_{chart_type}_path"] = f"/{fname}"
         print(f"  チャート保存: {fname}")
 
-# メイン記事（今回のスロット）
-filename = f"_posts/{today_str}-{slot}-ma-news.md"
+# --- 個別記事ファイル生成（ピックアップ5件それぞれ） ---
+def build_deal_body(art):
+    """個別案件の記事本文を生成"""
+    body = ""
+    body += f"**業種分類（経産省）：** {art['industry']}\n\n"
+    # J-MATレーティング
+    rating = art.get("rating", "C")
+    rating_label = {"A": "🟢 注目度：高", "B": "🟡 注目度：中", "C": "⚪ 注目度：低"}.get(rating, "⚪")
+    body += f"**J-MATレーティング：{rating_label}**\n\n"
+    if art["article_body"]:
+        body += art["article_body"] + "\n\n"
+    # バリュエーション分析テーブル
+    val = art.get("valuation", {})
+    val_rows = []
+    if val.get("raw", {}).get("acquisition_price"):
+        val_rows.append(f"| 取得価額 | {val['raw']['acquisition_price']/1e8:.1f}億円 |")
+    if val.get("ev_revenue"):
+        val_rows.append(f"| EV/売上高倍率 | {val['ev_revenue']}x |")
+    if val.get("ev_ebitda_approx"):
+        ind_m = INDUSTRY_MULTIPLES.get(art.get("industry", ""), {})
+        ref = f"（業種参考：{ind_m['ev_ebitda']}）" if ind_m.get("ev_ebitda") and ind_m["ev_ebitda"] != "N/A" else ""
+        val_rows.append(f"| EV/EBITDA（近似） | {val['ev_ebitda_approx']}x {ref} |")
+    if val.get("pbr"):
+        val_rows.append(f"| PBR | {val['pbr']}x |")
+    if val.get("per"):
+        val_rows.append(f"| PER | {val['per']}x |")
+    if val.get("op_margin"):
+        val_rows.append(f"| 営業利益率 | {val['op_margin']}% |")
+    if val_rows:
+        body += "**📈 バリュエーション分析**\n\n"
+        body += "| 指標 | 値 |\n|:---|:---|\n"
+        body += "\n".join(val_rows) + "\n\n"
+        body += "*※ EVは取得価額で近似。EBITDAは営業利益で近似（減価償却費を含まず）。*\n\n"
+    if art["analysis_comment"]:
+        body += f"---\n**📊 財務分析コメント**\n\n{art['analysis_comment']}\n\n"
+    if art.get("chart_pl_path"):
+        body += f"![PL推移チャート]({art['chart_pl_path']})\n\n"
+    if art.get("chart_stock_path"):
+        body += f"![株価推移チャート]({art['chart_stock_path']})\n\n"
+    body += f"[📄 公式リリースを読む]({art['press_url']})\n\n"
+    return body
 
-# featured YAML
+for art in featured_data:
+    slug = art["_slug"]
+    deal_filename = f"_posts/{today_str}-{slot}-deal-{slug}.md"
+    safe_title = art["pro_title"].replace('"', "'")
+    deal_body = build_deal_body(art)
+
+    deal_content = f"""---
+title: "{safe_title}"
+date: {date_str}
+layout: post
+summary: "{art['industry']}分野のM&A案件を財務分析付きで解説"
+slot: "{slot}"
+parent: "{today_str}-{slot}-ma-news"
+rank: {art["rank"]}
+industry: "{art['industry'].replace('"', "'")}"
+rating: "{art.get('rating', 'C')}"
+image: "{art['image']}"
+---
+
+{deal_body}
+"""
+    with open(deal_filename, "w", encoding="utf-8") as f:
+        f.write(deal_content)
+    # 個別記事のパスをartに記録（Jekyllデフォルトパーマリンク /:year/:month/:day/:title）
+    date_path = today_str.replace("-", "/")
+    art["_deal_path"] = f"/{date_path}/{slot}-deal-{slug}.html"
+    print(f"  個別記事: {deal_filename}")
+
+# --- メイン記事（サマリー＋リンク） ---
+main_filename = f"_posts/{today_str}-{slot}-ma-news.md"
+
+# featured YAML（個別記事リンク付き）
 featured_yaml = ""
 for f in featured_data:
     safe_title    = f["pro_title"].replace('"',"'")
     safe_press    = f["press_url"].replace('"',"'")
     safe_industry = f["industry"].replace('"',"'")
     safe_analysis_raw = f["analysis_comment"].replace('"',"'").replace('\n',' ') if f["analysis_comment"] else ""
-    # Markdown記号を除去してカード表示用に整形
     safe_analysis = re.sub(r'#{1,4}\s*', '', safe_analysis_raw)
     safe_analysis = re.sub(r'\*{1,2}([^*]+)\*{1,2}', r'\1', safe_analysis)
     safe_analysis = re.sub(r'[①②③④⑤]\s*', '', safe_analysis)
@@ -1236,10 +1326,12 @@ for f in featured_data:
     rating = f.get("rating", "C")
     chart_pl      = f.get("chart_pl_path","")
     chart_stock   = f.get("chart_stock_path","")
+    deal_path     = f.get("_deal_path","")
 
     featured_yaml += f'  - rank: {f["rank"]}\n'
     featured_yaml += f'    title: "{safe_title}"\n'
-    featured_yaml += f'    link: "{safe_press}"\n'
+    featured_yaml += f'    link: "{deal_path}"\n'
+    featured_yaml += f'    press_link: "{safe_press}"\n'
     featured_yaml += f'    image: "{f["image"]}"\n'
     featured_yaml += f'    industry: "{safe_industry}"\n'
     featured_yaml += f'    rating: "{rating}"\n'
@@ -1261,10 +1353,9 @@ for h in headline_data:
 main_title   = f"{today_jp}のM&A動向{slot_jp}：注目5案件を財務分析付きで解説"
 page_summary = f"本日{slot_jp}のM&Aニュース。TDnet・公式プレスリリースをもとにAIが分析。財務データ・株価チャート付き。"
 
-# 本文
+# 本文（サマリー目次 + 個別記事リンク）
 body = f"## {slot_jp}の注目5案件\n\n"
 
-# 目次（案件ジャンプリンク）
 body += "| # | 案件 | レーティング | 取得価額 |\n|:--|:-----|:---:|:---:|\n"
 for art in featured_data:
     rating = art.get("rating", "C")
@@ -1272,48 +1363,23 @@ for art in featured_data:
     ap = art.get("valuation", {}).get("raw", {}).get("acquisition_price", 0)
     ap_str = f"{ap/1e8:.0f}億円" if ap else "非公表"
     short_title = art["title"][:35] + ("..." if len(art["title"]) > 35 else "")
-    body += f"| {art['rank']} | {short_title} | {rating_emoji} | {ap_str} |\n"
+    deal_path = art.get("_deal_path", art["press_url"])
+    body += f"| {art['rank']} | [{short_title}]({deal_path}) | {rating_emoji} | {ap_str} |\n"
 body += "\n---\n\n"
 
+# 各案件のサマリーカード（本文は個別ページ）
 for art in featured_data:
+    deal_path = art.get("_deal_path", art["press_url"])
     body += f"### {art['rank']}. {art['pro_title']}\n\n"
     body += f"**業種分類（経産省）：** {art['industry']}\n\n"
-    # J-MATレーティング
     rating = art.get("rating", "C")
     rating_label = {"A": "🟢 注目度：高", "B": "🟡 注目度：中", "C": "⚪ 注目度：低"}.get(rating, "⚪")
     body += f"**J-MATレーティング：{rating_label}**\n\n"
-    if art["article_body"]:
-        body += art["article_body"] + "\n\n"
-    # バリュエーション分析テーブル
-    val = art.get("valuation", {})
-    val_rows = []
-    if val.get("raw", {}).get("acquisition_price"):
-        val_rows.append(f"| 取得価額 | {val['raw']['acquisition_price']/1e8:.1f}億円 |")
-    if val.get("ev_revenue"):
-        val_rows.append(f"| EV/売上高倍率 | {val['ev_revenue']}x |")
-    if val.get("ev_ebitda_approx"):
-        # 業種参考値を併記
-        ind_m = INDUSTRY_MULTIPLES.get(art.get("industry", ""), {})
-        ref = f"（業種参考：{ind_m['ev_ebitda']}）" if ind_m.get("ev_ebitda") and ind_m["ev_ebitda"] != "N/A" else ""
-        val_rows.append(f"| EV/EBITDA（近似） | {val['ev_ebitda_approx']}x {ref} |")
-    if val.get("pbr"):
-        val_rows.append(f"| PBR | {val['pbr']}x |")
-    if val.get("per"):
-        val_rows.append(f"| PER | {val['per']}x |")
-    if val.get("op_margin"):
-        val_rows.append(f"| 営業利益率 | {val['op_margin']}% |")
-    if val_rows:
-        body += "**📈 バリュエーション分析**\n\n"
-        body += "| 指標 | 値 |\n|:---|:---|\n"
-        body += "\n".join(val_rows) + "\n\n"
-        body += "*※ EVは取得価額で近似。EBITDAは営業利益で近似（減価償却費を含まず）。*\n\n"
+    # 分析コメント冒頭を抜粋
     if art["analysis_comment"]:
-        body += f"---\n**📊 財務分析コメント**\n\n{art['analysis_comment']}\n\n"
-    if art.get("chart_pl_path"):
-        body += f"![PL推移チャート]({art['chart_pl_path']})\n\n"
-    if art.get("chart_stock_path"):
-        body += f"![株価推移チャート]({art['chart_stock_path']})\n\n"
-    body += f"[📄 公式リリースを読む]({art['press_url']})\n\n---\n\n"
+        preview = art["analysis_comment"].replace('\n', ' ')[:150]
+        body += f"{preview}...\n\n"
+    body += f"[▶ 詳細分析を読む]({deal_path})\n\n---\n\n"
 
 body += "## 本日の全M&Aヘッドライン\n\n"
 for h in headline_data:
@@ -1331,8 +1397,8 @@ featured:
 {body}
 """
 
-with open(filename, "w", encoding="utf-8") as f:
+with open(main_filename, "w", encoding="utf-8") as f:
     f.write(content)
 
-print(f"\n✅ 完了: {filename}")
-print(f"   ピックアップ: {len(featured_data)}件 / ヘッドライン: {len(headline_data)}件")
+print(f"\n✅ 完了: {main_filename}")
+print(f"   個別記事: {len(featured_data)}件 / ヘッドライン: {len(headline_data)}件")

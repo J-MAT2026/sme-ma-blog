@@ -17,7 +17,7 @@ title: J-MAT | 日本最大級M&Aニュース
       <!-- 1位：大カード -->
       {% assign f = featured[0] %}
       <div class="featured-card featured-card--main">
-        <a href="{{ site.baseurl }}{{ latest.url }}" class="featured-card-link">
+        <a href="{{ site.baseurl }}{{ f.link }}" class="featured-card-link">
           <div class="featured-img-wrap">
             <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
                  onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
@@ -34,7 +34,7 @@ title: J-MAT | 日本最大級M&Aニュース
               <img src="{{ site.baseurl }}{{ f.chart_pl }}" alt="PL推移" class="chart-img" loading="lazy">
             </div>
             {% endif %}
-            <div class="featured-press-link">📄 公式リリースを読む →</div>
+            <div class="featured-press-link">▶ 詳細分析を読む →</div>
           </div>
         </a>
       </div>
@@ -44,7 +44,7 @@ title: J-MAT | 日本最大級M&Aニュース
         {% for f in featured %}
           {% if f.rank >= 2 %}
           <div class="featured-card featured-card--sub">
-            <a href="{{ f.link }}" target="_blank" rel="noopener">
+            <a href="{{ site.baseurl }}{{ f.link }}">
               <div class="featured-img-wrap">
                 <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
                      onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
