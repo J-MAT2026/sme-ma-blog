@@ -10,13 +10,41 @@ layout: default
     <div class="post-hero-overlay"></div>
   </div>
   {% endif %}
+{% elsif page.image and page.image != "" %}
+  <div class="post-hero-img-wrap">
+    <img src="{{ page.image }}" alt="{{ page.title }}" class="post-hero-img"
+         onerror="this.parentNode.style.display='none'">
+    <div class="post-hero-overlay"></div>
+  </div>
 {% endif %}
 
 <div class="post-header">
-  <a href="{{ site.baseurl }}/" class="back-link">← ニュース一覧に戻る</a>
-  <div class="post-tag-large">M&Aニュース</div>
+  {% if page.parent %}
+    {% assign parent_date = page.date | date: "%Y/%m/%d" %}
+    <a href="{{ site.baseurl }}/{{ parent_date }}/{{ page.parent }}.html" class="back-link">← 本日のM&A動向に戻る</a>
+  {% else %}
+    <a href="{{ site.baseurl }}/" class="back-link">← ニュース一覧に戻る</a>
+  {% endif %}
+  {% if page.rank %}
+    <div class="post-tag-large">PICK UP #{{ page.rank }}</div>
+  {% else %}
+    <div class="post-tag-large">M&Aニュース</div>
+  {% endif %}
   <h1 class="post-heading">{{ page.title }}</h1>
   <div class="post-meta-date">📅 {{ page.date | date: "%Y年%m月%d日" }}</div>
+  {% if page.industry %}
+    <div class="post-meta-industry" style="font-size:11px;color:#888;margin-top:6px;">📂 {{ page.industry }}</div>
+  {% endif %}
+  {% if page.rating %}
+    {% if page.rating == "A" %}
+      {% assign rating_label = "🟢 注目度：高" %}
+    {% elsif page.rating == "B" %}
+      {% assign rating_label = "🟡 注目度：中" %}
+    {% else %}
+      {% assign rating_label = "⚪ 注目度：低" %}
+    {% endif %}
+    <div class="post-meta-rating" style="font-size:12px;font-weight:700;color:#333;margin-top:8px;">J-MATレーティング：{{ rating_label }}</div>
+  {% endif %}
   {% if page.summary %}
   <div class="post-meta-summary">{{ page.summary }}</div>
   {% endif %}
@@ -27,5 +55,10 @@ layout: default
 </div>
 
 <div class="post-page-footer">
-  <a href="{{ site.baseurl }}/" class="back-btn">← ニュース一覧に戻る</a>
+  {% if page.parent %}
+    {% assign parent_date = page.date | date: "%Y/%m/%d" %}
+    <a href="{{ site.baseurl }}/{{ parent_date }}/{{ page.parent }}.html" class="back-btn">← 本日のM&A動向に戻る</a>
+  {% else %}
+    <a href="{{ site.baseurl }}/" class="back-btn">← ニュース一覧に戻る</a>
+  {% endif %}
 </div>
