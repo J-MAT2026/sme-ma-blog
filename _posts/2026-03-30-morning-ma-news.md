@@ -1,6 +1,6 @@
 ---
 title: "2026年03月30日のM&A動向朝刊：注目5案件を財務分析付きで解説"
-date: 2026-03-30 05:31:39 +0900
+date: 2026-03-30 06:26:06 +0900
 summary: "本日朝刊のM&Aニュース。TDnet・公式プレスリリースをもとにAIが分析。財務データ・株価チャート付き。"
 slot: "morning"
 featured:
@@ -8,50 +8,50 @@ featured:
     title: "【化学工業】Aiロボティクス＜247A＞、化粧品ブランド展開のBJCを子会社化"
     link: "/2026/03/30/morning-deal-e598844b.html"
     press_link: "https://maonline.jp/news/20260327n"
-    image: "https://images.pexels.com/photos/16751235/pexels-photo-16751235.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/36771889/pexels-photo-36771889.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "化学工業"
     rating: "A"
-    analysis: "AiロボティクスによるBJCの子会社化は、バリュエーション分析から見ると、EV/EBITDA倍率が8.6xと、化学工業の業種参考マルチプルの中央値帯（8-12x）内に収まっている。また、EV/売上高倍率は2.38xと、業種参考マルチプルの中央値帯（1-2x）よりもやや高水準にある。PBRも6.12xと高い水準にあるが、化粧品・コスメ業界は高めの傾向にあるため、妥当な水準と言える。  売り手のBJC"
+    analysis: "バリュエーション評価として、取得価額257億円に対する売上高108億円、営業利益30億円、純資産42億円から算出されたEV/売上高倍率2.38x、EV/EBITDA倍率8.6x、PBR6.12xは、業種参考マルチプルのEV/EBITDA中央値帯8-12xと比較してやや低水準である。また、EV/売上高倍率は業種参考値の1-2xの中央値帯の上限に近い。PBRも高水準にある。  売り手の収益性は、営業利"
     chart_pl: ""
     chart_stock: ""
   - rank: 2
     title: "【化学工業】保土谷化学工業＜4112＞、ハンガリーの化学メーカーFramochemを子会社化"
     link: "/2026/03/30/morning-deal-a7288dc4.html"
     press_link: "https://maonline.jp/news/20260327g"
-    image: "https://images.pexels.com/photos/6608506/pexels-photo-6608506.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/13116180/pexels-photo-13116180.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "化学工業"
     rating: "A"
-    analysis: "バリュエーション評価として、取得価額166.0億円を基に算出されたEV/EBITDA倍率は8.7xであり、化学工業の業種参考マルチプルの中央値帯である8-12xと比較すると、下部に位置することになる。また、EV/売上高倍率は1.87xで、業種参考マルチプルの中央値帯である1-2xの範囲内である。PBRは3.19xとやや高水準である。  売り手の収益性は、営業利益率が21.3%と高い水準にある。買い"
+    analysis: "バリュエーション分析によると、EV/EBITDA倍率は8.7x、EV/売上高倍率は1.87x、PBRは3.19xと算出されている。化学工業の業種参考マルチプルと比較すると、EV/EBITDA倍率は中央値帯の8-12xの下限に近く、EV/売上高倍率は中央値帯の1-2xの上限に近い。したがって、バリュエーションは妥当な水準と判断される。  売り手の営業利益率は21.3%と高い水準にある。取得価額166"
     chart_pl: ""
     chart_stock: ""
   - rank: 3
     title: "【機械器具製造業】キッツ＜6498＞、カナデビア＜7004＞傘下で真空バルブ製造のブイテックスを子会社化"
     link: "/2026/03/30/morning-deal-d0df11a6.html"
     press_link: "https://maonline.jp/news/20260326a"
-    image: "https://images.pexels.com/photos/36449414/pexels-photo-36449414.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/7018173/pexels-photo-7018173.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "機械器具製造業"
     rating: "B"
-    analysis: "バリュエーション評価として、売上高に対するEV倍率は1.09x、EV/EBITDA倍率は31.0xと算出されており、業種参考マルチプルのEV/EBITDA中央値帯（8-12x）と比較すると高い水準にあることがわかります。また、PBRも2.91xとやや高めの評価となっています。  売り手の収益性は、営業利益率が3.5%と低水準にあることがわかります。買い手の買収余力については、取得価額93億円が買い"
+    analysis: "バリュエーション評価として、取得価額93億円に対する売上高85億円、営業利益3億円、純資産32億円から算出されたEV/EBITDA倍率は31.0xと高水準であることがわかります。業種参考マルチプルのEV/EBITDA中央値帯は8-12xであり、取得価額は割高と言えるでしょう。EV/売上高倍率も1.09xとやや高めです。  売り手の収益性は、営業利益率が3.5%と低水準であることがわかります。買い手"
     chart_pl: ""
     chart_stock: ""
   - rank: 4
     title: "【情報サービス業】SHIFT＜3697＞、システム開発のステップを子会社化"
     link: "/2026/03/30/morning-deal-45392da9.html"
     press_link: "https://maonline.jp/news/20260327k"
-    image: "https://images.pexels.com/photos/3861951/pexels-photo-3861951.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/1181316/pexels-photo-1181316.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "情報サービス業"
     rating: "A"
-    analysis: "SHIFTによるシステム開発子会社の取得について、バリュエーション評価を行うと、EV/EBITDA倍率は15.0x、EV/売上高倍率は2.5x、PBRは3.33xである。これらの指標は、情報サービス業の業種参考マルチプルと比較すると、EV/EBITDA倍率は中央値帯の下限とほぼ一致しており、EV/売上高倍率も中央値帯の下限に近い。したがって、取得価格は妥当と言える。  売り手の収益性は、営業利益率"
+    analysis: "SHIFTによるシステム開発子会社の買収は、バリュエーション分析によると、EV/EBITDA倍率が15.0x、EV/売上高倍率が2.5x、PBRが3.33xと算出された。情報サービス業の業種参考マルチプルと比較すると、EV/EBITDA倍率は中央値帯の下限と一致し、EV/売上高倍率は中央値帯の下限と一致する。したがって、買収価格は妥当と言える。  売り手の収益性は、営業利益率が16.7%と高い水準"
     chart_pl: ""
     chart_stock: ""
   - rank: 5
     title: "【情報サービス業】Birdman＜7063＞、MLM業界向けシステム開発などのマーベリックを子会社化"
     link: "/2026/03/30/morning-deal-d4eb271c.html"
     press_link: "https://maonline.jp/news/20260326f"
-    image: "https://images.pexels.com/photos/34803998/pexels-photo-34803998.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+    image: "https://images.pexels.com/photos/5223887/pexels-photo-5223887.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
     industry: "情報サービス業"
     rating: "A"
-    analysis: "バリュエーション分析によると、EV/EBITDA倍率は20.0x、EV/売上高倍率は2.5x、PBRは1.82xである。これらの指標を業種参考マルチプルと比較すると、EV/EBITDA倍率は業界の中央値帯（15-25x）の中央値よりやや低い水準、EV/売上高倍率は業界の中央値帯（2-5x）の中央値とほぼ同等である。したがって、取得価額は妥当な水準であると判断される。  売り手の収益性は、営業利益率"
+    analysis: "バリュエーション評価として、取得価額20.0億円は、EV/EBITDA倍率が20.0x、PBRが1.82xと算出される。情報サービス業の業種参考マルチプルと比較すると、EV/EBITDA倍率は15-25xの中央値帯の上限に近く、EV/売上高倍率は2-5xの中央値帯の下限に近い。したがって、取得価額は妥当な水準と判断される。  売り手の収益性は、営業利益率が12.5%と高い水準にある。買い手の買収余"
     chart_pl: ""
     chart_stock: ""
 headlines:
@@ -135,7 +135,7 @@ headlines:
 
 **J-MATレーティング：🟢 注目度：高**
 
-AiロボティクスによるBJCの子会社化は、バリュエーション分析から見ると、EV/EBITDA倍率が8.6xと、化学工業の業種参考マルチプルの中央値帯（8-12x）内に収まっている。また、EV/売上高倍率は2.38xと、業種参考マルチプルの中央値帯（1-2x）よりもやや高水準にある。PBRも6.12x...
+バリュエーション評価として、取得価額257億円に対する売上高108億円、営業利益30億円、純資産42億円から算出されたEV/売上高倍率2.38x、EV/EBITDA倍率8.6x、PBR6.12xは、業種参考マルチプルのEV/EBITDA中央値帯8-12xと比較してやや低水準である。また、EV/売上高...
 
 [▶ 詳細分析を読む](/2026/03/30/morning-deal-e598844b.html)
 
@@ -147,7 +147,7 @@ AiロボティクスによるBJCの子会社化は、バリュエーション分
 
 **J-MATレーティング：🟢 注目度：高**
 
-バリュエーション評価として、取得価額166.0億円を基に算出されたEV/EBITDA倍率は8.7xであり、化学工業の業種参考マルチプルの中央値帯である8-12xと比較すると、下部に位置することになる。また、EV/売上高倍率は1.87xで、業種参考マルチプルの中央値帯である1-2xの範囲内である。PB...
+バリュエーション分析によると、EV/EBITDA倍率は8.7x、EV/売上高倍率は1.87x、PBRは3.19xと算出されている。化学工業の業種参考マルチプルと比較すると、EV/EBITDA倍率は中央値帯の8-12xの下限に近く、EV/売上高倍率は中央値帯の1-2xの上限に近い。したがって、バリュエ...
 
 [▶ 詳細分析を読む](/2026/03/30/morning-deal-a7288dc4.html)
 
@@ -159,7 +159,7 @@ AiロボティクスによるBJCの子会社化は、バリュエーション分
 
 **J-MATレーティング：🟡 注目度：中**
 
-バリュエーション評価として、売上高に対するEV倍率は1.09x、EV/EBITDA倍率は31.0xと算出されており、業種参考マルチプルのEV/EBITDA中央値帯（8-12x）と比較すると高い水準にあることがわかります。また、PBRも2.91xとやや高めの評価となっています。  売り手の収益性は、営...
+バリュエーション評価として、取得価額93億円に対する売上高85億円、営業利益3億円、純資産32億円から算出されたEV/EBITDA倍率は31.0xと高水準であることがわかります。業種参考マルチプルのEV/EBITDA中央値帯は8-12xであり、取得価額は割高と言えるでしょう。EV/売上高倍率も1.0...
 
 [▶ 詳細分析を読む](/2026/03/30/morning-deal-d0df11a6.html)
 
@@ -171,7 +171,7 @@ AiロボティクスによるBJCの子会社化は、バリュエーション分
 
 **J-MATレーティング：🟢 注目度：高**
 
-SHIFTによるシステム開発子会社の取得について、バリュエーション評価を行うと、EV/EBITDA倍率は15.0x、EV/売上高倍率は2.5x、PBRは3.33xである。これらの指標は、情報サービス業の業種参考マルチプルと比較すると、EV/EBITDA倍率は中央値帯の下限とほぼ一致しており、EV/売...
+SHIFTによるシステム開発子会社の買収は、バリュエーション分析によると、EV/EBITDA倍率が15.0x、EV/売上高倍率が2.5x、PBRが3.33xと算出された。情報サービス業の業種参考マルチプルと比較すると、EV/EBITDA倍率は中央値帯の下限と一致し、EV/売上高倍率は中央値帯の下限と...
 
 [▶ 詳細分析を読む](/2026/03/30/morning-deal-45392da9.html)
 
@@ -183,7 +183,7 @@ SHIFTによるシステム開発子会社の取得について、バリュエー
 
 **J-MATレーティング：🟢 注目度：高**
 
-バリュエーション分析によると、EV/EBITDA倍率は20.0x、EV/売上高倍率は2.5x、PBRは1.82xである。これらの指標を業種参考マルチプルと比較すると、EV/EBITDA倍率は業界の中央値帯（15-25x）の中央値よりやや低い水準、EV/売上高倍率は業界の中央値帯（2-5x）の中央値と...
+バリュエーション評価として、取得価額20.0億円は、EV/EBITDA倍率が20.0x、PBRが1.82xと算出される。情報サービス業の業種参考マルチプルと比較すると、EV/EBITDA倍率は15-25xの中央値帯の上限に近く、EV/売上高倍率は2-5xの中央値帯の下限に近い。したがって、取得価額は...
 
 [▶ 詳細分析を読む](/2026/03/30/morning-deal-d4eb271c.html)
 
