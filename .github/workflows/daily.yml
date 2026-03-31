@@ -2,23 +2,18 @@ name: Daily M&A Update
 
 on:
   schedule:
-    - cron: '1 0 * * *'   # JST 09:01
-    - cron: '1 4 * * *'   # JST 13:01
-    - cron: '1 8 * * *'   # JST 17:01
+    # JST 9:01 = UTC 0:01, JST 17:01 = UTC 8:01
+    - cron: '1 0 * * *'   # 朝刊 9:01 JST
+    - cron: '1 8 * * *'   # 夕刊 17:01 JST
   workflow_dispatch:
 
 jobs:
   run:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -26,17 +21,17 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run app.py
-        run: python app.py
         env:
-          PEXELS_API_KEY:    ${{ secrets.PEXELS_API_KEY }}
-          EDINETDB_API_KEY:  ${{ secrets.EDINETDB_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GROQ_API_KEY:      ${{ secrets.GROQ_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          EDINETDB_API_KEY: ${{ secrets.EDINETDB_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python app.py
 
       - name: Commit and push
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add _posts/ assets/charts/
-          git diff --cached --quiet || git commit -m "auto update: $(date '+%Y-%m-%d %H:%M')"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "auto: update $(date -u +%Y-%m-%d_%H%M)"
           git push
