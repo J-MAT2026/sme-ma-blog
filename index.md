@@ -3,69 +3,160 @@ layout: default
 title: J-MAT | 日本最大級M&Aニュース
 ---
 
-{% assign latest = site.posts.first %}
+{% comment %}
+  同日の朝刊・夕刊を抽出。最新7件のpostsからslotで分類。
+{% endcomment %}
+
+{% assign today_posts = "" | split: "" %}
+{% assign latest_date = site.posts.first.date | date: "%Y-%m-%d" %}
+
+{% for p in site.posts limit:14 %}
+  {% assign p_date = p.date | date: "%Y-%m-%d" %}
+  {% if p_date == latest_date and p.featured %}
+    {% assign today_posts = today_posts | push: p %}
+  {% endif %}
+{% endfor %}
+
+{% comment %} 朝刊・夕刊を分離 {% endcomment %}
+{% assign morning_post = nil %}
+{% assign evening_post = nil %}
+{% for p in today_posts %}
+  {% if p.slot == "morning" and morning_post == nil %}
+    {% assign morning_post = p %}
+  {% elsif p.slot == "evening" and evening_post == nil %}
+    {% assign evening_post = p %}
+  {% endif %}
+{% endfor %}
+
+{% comment %} 最新日に1件しかなければそれを表示 {% endcomment %}
+{% unless morning_post or evening_post %}
+  {% if site.posts.first.featured %}
+    {% assign morning_post = site.posts.first %}
+  {% endif %}
+{% endunless %}
 
 <div class="top-layout">
 
-  <!-- 左：ピックアップ5件 -->
+  <!-- 左：ピックアップ（朝刊＋夕刊） -->
   <div class="featured-section">
-    <h2 class="section-title">Today's Featured</h2>
 
-    {% if latest and latest.featured %}
-      {% assign featured = latest.featured %}
+    {% comment %} ===== 夕刊（上段） ===== {% endcomment %}
+    {% if evening_post %}
+    <h2 class="section-title">Today's Featured — 夕刊</h2>
+    {% assign featured = evening_post.featured %}
 
-      <!-- 1位：大カード -->
-      {% assign f = featured[0] %}
-      <div class="featured-card featured-card--main">
-        <a href="{{ site.baseurl }}{{ f.link }}" class="featured-card-link">
-          <div class="featured-img-wrap">
-            <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
-                 onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
-            <div class="featured-cat">{{ f.industry }}</div>
-            <div class="featured-rank">#1</div>
-          </div>
-          <div class="featured-body">
-            <div class="featured-title">{{ f.title }}</div>
-            {% if f.analysis %}
-            <div class="featured-analysis">📊 {{ f.analysis | truncate: 160 }}</div>
-            {% endif %}
-            {% if f.chart_pl != "" %}
-            <div class="featured-charts">
-              <img src="{{ site.baseurl }}{{ f.chart_pl }}" alt="PL推移" class="chart-img" loading="lazy">
-            </div>
-            {% endif %}
-            <div class="featured-press-link">▶ 詳細分析を読む →</div>
-          </div>
-        </a>
-      </div>
-
-      <!-- 2〜5位：小カード2列 -->
-      <div class="featured-grid">
-        {% for f in featured %}
-          {% if f.rank >= 2 %}
-          <div class="featured-card featured-card--sub">
-            <a href="{{ site.baseurl }}{{ f.link }}">
-              <div class="featured-img-wrap">
-                <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
-                     onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
-                <div class="featured-cat">{{ f.industry }}</div>
-                <div class="featured-rank">#{{ f.rank }}</div>
-              </div>
-              <div class="featured-body">
-                <div class="featured-title">{{ f.title }}</div>
-                {% if f.analysis %}
-                <div class="featured-analysis-mini">{{ f.analysis | truncate: 80 }}</div>
-                {% endif %}
-              </div>
-            </a>
+    <!-- 1位：大カード -->
+    {% assign f = featured[0] %}
+    <div class="featured-card featured-card--main">
+      <a href="{{ site.baseurl }}{{ f.link }}" class="featured-card-link">
+        <div class="featured-img-wrap">
+          <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
+               onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
+          <div class="featured-cat">{{ f.industry }}</div>
+          <div class="featured-rank">#1</div>
+        </div>
+        <div class="featured-body">
+          <div class="featured-title">{{ f.title }}</div>
+          {% if f.analysis %}
+          <div class="featured-analysis">📊 {{ f.analysis | truncate: 160 }}</div>
+          {% endif %}
+          {% if f.chart_pl != "" %}
+          <div class="featured-charts">
+            <img src="{{ site.baseurl }}{{ f.chart_pl }}" alt="PL推移" class="chart-img" loading="lazy">
           </div>
           {% endif %}
-        {% endfor %}
-      </div>
+          <div class="featured-press-link">▶ 詳細分析を読む →</div>
+        </div>
+      </a>
+    </div>
 
-    {% else %}
-      <p class="no-posts">本日のピックアップを準備中です</p>
+    <!-- 2〜5位：小カード2列 -->
+    <div class="featured-grid">
+      {% for f in featured %}
+        {% if f.rank >= 2 %}
+        <div class="featured-card featured-card--sub">
+          <a href="{{ site.baseurl }}{{ f.link }}">
+            <div class="featured-img-wrap">
+              <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
+                   onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
+              <div class="featured-cat">{{ f.industry }}</div>
+              <div class="featured-rank">#{{ f.rank }}</div>
+            </div>
+            <div class="featured-body">
+              <div class="featured-title">{{ f.title }}</div>
+              {% if f.analysis %}
+              <div class="featured-analysis-mini">{{ f.analysis | truncate: 80 }}</div>
+              {% endif %}
+            </div>
+          </a>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
     {% endif %}
+
+    {% comment %} ===== 朝刊（下段） ===== {% endcomment %}
+    {% if morning_post %}
+    <h2 class="section-title" {% if evening_post %}style="margin-top:48px;"{% endif %}>
+      {% if evening_post %}Today's Featured — 朝刊{% else %}Today's Featured{% endif %}
+    </h2>
+    {% assign featured = morning_post.featured %}
+
+    <!-- 1位：大カード -->
+    {% assign f = featured[0] %}
+    <div class="featured-card featured-card--main">
+      <a href="{{ site.baseurl }}{{ f.link }}" class="featured-card-link">
+        <div class="featured-img-wrap">
+          <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
+               onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
+          <div class="featured-cat">{{ f.industry }}</div>
+          <div class="featured-rank">#1</div>
+        </div>
+        <div class="featured-body">
+          <div class="featured-title">{{ f.title }}</div>
+          {% if f.analysis %}
+          <div class="featured-analysis">📊 {{ f.analysis | truncate: 160 }}</div>
+          {% endif %}
+          {% if f.chart_pl != "" %}
+          <div class="featured-charts">
+            <img src="{{ site.baseurl }}{{ f.chart_pl }}" alt="PL推移" class="chart-img" loading="lazy">
+          </div>
+          {% endif %}
+          <div class="featured-press-link">▶ 詳細分析を読む →</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- 2〜5位：小カード2列 -->
+    <div class="featured-grid">
+      {% for f in featured %}
+        {% if f.rank >= 2 %}
+        <div class="featured-card featured-card--sub">
+          <a href="{{ site.baseurl }}{{ f.link }}">
+            <div class="featured-img-wrap">
+              <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
+                   onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
+              <div class="featured-cat">{{ f.industry }}</div>
+              <div class="featured-rank">#{{ f.rank }}</div>
+            </div>
+            <div class="featured-body">
+              <div class="featured-title">{{ f.title }}</div>
+              {% if f.analysis %}
+              <div class="featured-analysis-mini">{{ f.analysis | truncate: 80 }}</div>
+              {% endif %}
+            </div>
+          </a>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% unless morning_post or evening_post %}
+      <h2 class="section-title">Today's Featured</h2>
+      <p class="no-posts">本日のピックアップを準備中です</p>
+    {% endunless %}
+
   </div>
 
   <!-- 右：日付別ヘッドライン -->
@@ -77,7 +168,7 @@ title: J-MAT | 日本最大級M&Aニュース
       <button class="headline-group-btn {% if forloop.first %}active{% endif %}"
               onclick="toggleGroup(this)">
         <span class="headline-group-date">{{ post.date | date: "%Y年%m月%d日" }}
-          {% if post.slot == "morning" %}朝{% elsif post.slot == "noon" %}昼{% else %}夕{% endif %}
+          {% if post.slot == "morning" %}朝刊{% else %}夕刊{% endif %}
         </span>
         <span class="headline-group-count">
           {% if post.headlines %}{{ post.headlines | size }}件{% else %}-{% endif %}
