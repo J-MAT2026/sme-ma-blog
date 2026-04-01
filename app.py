@@ -840,6 +840,57 @@ for art in featured_data:
         art[f"chart_{chart_type}_path"] = f"/{fname}"
         print(f"  チャート保存: {fname}")
 
+# ======================
+# 個別deal記事（ピックアップ5件）
+# ======================
+for art in featured_data:
+    slug = hashlib.md5(art["title"].encode()).hexdigest()[:8]
+    deal_filename = f"_posts/{today_str}-{slot}-deal-{slug}.md"
+
+    deal_body = ""
+    deal_body += f"**業種分類（経産省）：** {art['industry']}\n\n"
+    deal_body += f"**J-MATレーティング：🟢 注目度：高**\n\n"
+    if art["article_body"]:
+        deal_body += art["article_body"] + "\n\n"
+
+    # バリュエーション分析テーブル（プレスリリース数値ベース）
+    if art["analysis_comment"]:
+        deal_body += f"**📈 バリュエーション分析**\n\n"
+        deal_body += f"---\n\n**📊 財務分析コメント**\n\n{art['analysis_comment']}\n\n"
+
+    if art.get("chart_pl_path"):
+        deal_body += f"![PL推移チャート]({art['chart_pl_path']})\n\n"
+    if art.get("chart_stock_path"):
+        deal_body += f"![株価推移チャート]({art['chart_stock_path']})\n\n"
+
+    deal_body += f"[📄 公式リリースを読む]({art['press_url']})\n\n"
+
+    safe_deal_title = art["pro_title"].replace('"', "'")
+    safe_deal_industry = art["industry"].replace('"', "'")
+
+    deal_content = f"""---
+title: "{safe_deal_title}"
+date: {date_str}
+layout: post
+summary: "{safe_deal_industry}分野のM&A案件を財務分析付きで解説"
+slot: "{slot}"
+parent: "{today_str}-{slot}-ma-news"
+rank: {art["rank"]}
+industry: "{safe_deal_industry}"
+rating: "A"
+image: "{art["image"]}"
+---
+
+{deal_body}
+"""
+    with open(deal_filename, "w", encoding="utf-8") as df:
+        df.write(deal_content)
+
+    # deal記事のJekyllパスを保存（カードリンク用）
+    deal_date_path = now.strftime("%Y/%m/%d")
+    art["deal_page_url"] = f"/{deal_date_path}/{today_str}-{slot}-deal-{slug}.html"
+    print(f"  個別記事: {deal_filename}")
+
 # メイン記事（今回のスロット）
 filename = f"_posts/{today_str}-{slot}-ma-news.md"
 
@@ -854,7 +905,7 @@ for f in featured_data:
     chart_stock = f.get("chart_stock_path","")
     featured_yaml += f'  - rank: {f["rank"]}\n'
     featured_yaml += f'    title: "{safe_title}"\n'
-    featured_yaml += f'    link: "{safe_press}"\n'
+    featured_yaml += f'    link: "{f.get("deal_page_url", safe_press)}"\n'
     featured_yaml += f'    image: "{f["image"]}"\n'
     featured_yaml += f'    industry: "{safe_industry}"\n'
     featured_yaml += f'    ind_icon: "{f["ind_icon"]}"\n'
