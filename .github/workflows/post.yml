@@ -1,0 +1,49 @@
+name: Post to WordPress
+
+on:
+  push:
+    paths:
+      - "posts/*.md"
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Get latest markdown
+        run: |
+          FILE=$(ls posts/*.md | tail -n 1)
+          echo "FILE=$FILE" >> $GITHUB_ENV
+
+      - name: Convert markdown to HTML
+        run: |
+          pip install markdown
+          python -c "
+import markdown
+import os
+
+file = os.environ['FILE']
+with open(file) as f:
+    text = f.read()
+
+html = markdown.markdown(text)
+
+with open('output.html', 'w') as f:
+    f.write(html)
+"
+
+      - name: Post to WordPress
+        run: |
+          curl -X POST https://j-mat.local/wp-json/wp/v2/posts \
+          -u "${{ secrets.WP_USER }}:${{ secrets.WP_APP_PASSWORD }}" \
+          -H "Content-Type: application/json" \
+          -d @- <<EOF
+          {
+            "title": "Auto Post",
+            "content": "$(cat output.html)",
+            "status": "publish"
+          }
+          EOF
