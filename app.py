@@ -334,6 +334,74 @@ def edinetdb_financials(edinet_code):
 ## プレスリリース本文+財務データで十分な分析品質を確保できる。
 
 # ======================
+# Web検索による情報補完
+# ======================
+def web_search_supplement(deal_title, company_name="", sec_code=""):
+    """Google検索で案件に関する追加情報を収集"""
+    results = []
+
+    # 検索クエリを組み立て（案件名ベース）
+    queries = []
+    # クエリ1: プレスリリース・適時開示を狙う
+    short_title = re.sub(r'＜[^＞]+＞', '', deal_title).strip()[:40]
+    queries.append(f"{short_title} プレスリリース 子会社化 取得価額")
+    # クエリ2: 買い手の財務情報
+    if company_name:
+        queries.append(f"{company_name} 決算 売上高 営業利益 2025 2026")
+    # クエリ3: 証券コードで企業情報
+    if sec_code:
+        queries.append(f"{sec_code} 決算短信 業績")
+
+    for query in queries[:3]:
+        try:
+            r = requests.get("https://www.google.com/search",
+                             params={"q": query, "hl": "ja", "num": 5},
+                             headers={
+                                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                                 "Accept-Language": "ja,en;q=0.9",
+                             },
+                             timeout=10)
+            if r.status_code == 200:
+                soup = BeautifulSoup(r.text, "html.parser")
+                for div in soup.find_all("div", class_="BNeawe"):
+                    text = div.get_text(separator=" ").strip()
+                    if len(text) > 30:
+                        results.append(text[:500])
+            time.sleep(1)
+        except Exception as e:
+            print(f"  Web検索エラー: {e}")
+
+    return "\n".join(results[:10])[:3000] if results else ""
+
+def fetch_company_profile_web(company_name, sec_code=""):
+    """Web検索で企業の直近業績・概要を取得"""
+    if not company_name:
+        return ""
+    query = f"{company_name}"
+    if sec_code:
+        query += f" {sec_code}"
+    query += " 会社概要 売上高 営業利益 従業員"
+    try:
+        r = requests.get("https://www.google.com/search",
+                         params={"q": query, "hl": "ja", "num": 5},
+                         headers={
+                             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                             "Accept-Language": "ja,en;q=0.9",
+                         },
+                         timeout=10)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, "html.parser")
+            texts = []
+            for div in soup.find_all("div", class_="BNeawe"):
+                text = div.get_text(separator=" ").strip()
+                if len(text) > 20:
+                    texts.append(text[:400])
+            return "\n".join(texts[:8])[:2000]
+    except Exception as e:
+        print(f"  企業情報Web検索エラー: {e}")
+    return ""
+
+# ======================
 # 株価取得（Yahoo Finance Japan）
 # ======================
 def fetch_stock_price(sec_code):
@@ -450,12 +518,11 @@ def groq_generate(prompt):
         payload = {
             "model": GROQ_MODEL,
             "messages": [
-                {"role": "system", "content": "あなたはM&A専門メディアのシニアアナリストです。正確で簡潔な日本語で出力してください。Markdown形式で出力し、余計なメタコメントや注釈は一切含めないでください。"},
+                {"role": "system", "content": "あなたはM&A専門メディアのシニアアナリストです。プレスリリースやEDINETの一次情報のみに基づいて分析してください。情報源に書かれていない企業名・数値・事実は絶対に使わないでください。Markdown形式で出力し、最後の文は必ず「。」で終えてください。"},
                 {"role": "user", "content": prompt}
             ],
-            # ★修正1: 2000 → 3500 に引き上げ（記事途切れ対策）
-            "max_tokens": 3500,
-            "temperature": 0.4,
+            "max_tokens": 4000,
+            "temperature": 0.3,
         }
         r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=45)
         result = r.json()
@@ -465,13 +532,17 @@ def groq_generate(prompt):
         choices = result.get("choices", [])
         if choices:
             text = choices[0].get("message", {}).get("content", "").strip()
+            # 途切れ検知：finish_reasonがlengthならトークン上限で切れている
+            finish_reason = choices[0].get("finish_reason", "")
+            if finish_reason == "length":
+                print(f"  ⚠ Groq: トークン上限で出力途切れ（finish_reason=length）")
             return clean_llm_output(text)
     except Exception as e:
         print(f"  Groq API error: {e}")
     return ""
 
 def clean_llm_output(text):
-    """LLM出力のクリーンアップ"""
+    """LLM出力のクリーンアップ + 途切れ修復"""
     if not text:
         return ""
     text = re.sub(r'```[\w]*\n?', '', text)
@@ -484,6 +555,14 @@ def clean_llm_output(text):
                   'PMI（Post Merger Integration：買収後統合）', text)
     text = re.sub(r'\n{4,}', '\n\n\n', text)
     text = text.strip()
+
+    # 途切れ修復：最後の文が「。」で終わっていない場合、不完全な末尾を除去
+    if text and not text.endswith("。") and not text.endswith("）") and not text.endswith(")"):
+        # 最後の「。」以降の不完全な文を削除
+        last_period = text.rfind("。")
+        if last_period > 0:
+            text = text[:last_period + 1]
+
     return text
 
 # 後方互換のためエイリアスを定義
@@ -491,13 +570,55 @@ def claude_generate(prompt):
     return groq_generate(prompt)
 
 def gemini_generate(prompt, retry=1):
-    return groq_generate(prompt)
+    """Gemini APIで記事・分析コメントを生成（高品質・日本語に強い）"""
+    if not GEMINI_API_KEY:
+        print("  Gemini API: APIキー未設定、Groqにフォールバック")
+        return groq_generate(prompt)
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        payload = {
+            "contents": [
+                {"parts": [{"text": prompt}]}
+            ],
+            "systemInstruction": {
+                "parts": [{"text": "あなたはM&A専門メディアのシニアアナリストです。プレスリリースやEDINETの一次情報のみに基づいて分析してください。情報源に書かれていない企業名・数値・事実は絶対に使わないでください。Markdown形式で出力し、最後の文は必ず「。」で終えてください。"}]
+            },
+            "generationConfig": {
+                "temperature": 0.3,
+                "maxOutputTokens": 4000,
+            }
+        }
+        r = requests.post(url, json=payload, timeout=60)
+        result = r.json()
 
-def generate_article(deal, press_text, financials):
-    """LLMでプロ水準のM&A分析記事を生成（一次情報ベース）"""
+        if "error" in result:
+            print(f"  Gemini error: {result['error'].get('message','')[:100]}")
+            if retry > 0:
+                print("  Groqにフォールバック...")
+                return groq_generate(prompt)
+            return ""
+
+        candidates = result.get("candidates", [])
+        if candidates:
+            parts = candidates[0].get("content", {}).get("parts", [])
+            text = "".join([p.get("text", "") for p in parts]).strip()
+            # 途切れ検知
+            finish_reason = candidates[0].get("finishReason", "")
+            if finish_reason == "MAX_TOKENS":
+                print(f"  ⚠ Gemini: トークン上限で出力途切れ")
+            return clean_llm_output(text)
+    except Exception as e:
+        print(f"  Gemini API error: {e}")
+        if retry > 0:
+            print("  Groqにフォールバック...")
+            return groq_generate(prompt)
+    return ""
+
+def generate_article(deal, press_text, financials, web_supplement="", company_profile=""):
+    """LLMでプロ水準のM&A分析記事を生成（一次情報+Web検索補完）"""
     fin_summary = ""
     if financials:
-        for f in financials[-3:]:
+        for f in financials[-5:]:
             fy = f.get("fiscal_year","")
             rev = (f.get("revenue",0) or 0) / 1e8
             oi = (f.get("operating_income",0) or 0) / 1e8
@@ -507,41 +628,53 @@ def generate_article(deal, press_text, financials):
             fin_summary += f"FY{fy}: 売上{rev:.1f}億円 / 営業利益{oi:.1f}億円 / 純利益{ni:.1f}億円 / 総資産{ta:.1f}億円 / 純資産{eq:.1f}億円\n"
 
     if press_text and len(press_text) > 100:
-        info_section = f"【適時開示・プレスリリース本文】\n{press_text[:1500]}"
+        info_section = f"【適時開示・プレスリリース本文】\n{press_text[:2500]}"
     else:
-        info_section = "【注】適時開示PDFの取得不可。タイトル情報のみで分析してください。"
+        info_section = "【注】適時開示PDFの取得不可。タイトル情報とWeb検索結果から分析してください。"
 
     title_nums = re.findall(r'[\d,]+(?:万|億|百万)?円?', deal['title'] + " " + (press_text[:500] if press_text else ""))
     nums_info = f"テキスト内の数値: {', '.join(title_nums[:10])}" if title_nums else ""
 
     prompt = f"""あなたはM&A専門メディア「J-MAT」のシニアアナリストです。
-一次情報に基づき、プロの投資家・経営者が読む分析記事を執筆してください。
+以下の情報源すべてを活用し、投資家・経営者向けの本格的なM&A分析記事を執筆してください。
+Word1ページ分（800〜1200字）のボリュームで書いてください。
 
 【案件名】{deal['title']}
 
 {info_section}
 
-{f'【買い手の財務データ（直近3年）】{chr(10)}{fin_summary}' if fin_summary else '【財務データ】EDINETから取得できず。プレスリリース内の数値を使用してください。'}
+{f'【買い手のEDINET財務データ（直近5年）】{chr(10)}{fin_summary}' if fin_summary else ''}
+
+{f'【Web検索で収集した追加情報】{chr(10)}{web_supplement[:2000]}' if web_supplement else ''}
+
+{f'【買い手の企業概要（Web検索）】{chr(10)}{company_profile[:1500]}' if company_profile else ''}
 
 {nums_info}
 
-以下の4セクションで出力してください。Markdown見出し（##）で区切ること。
-※ プレスリリースに記載の具体的数値（取得価額、売上高、営業利益、純資産、取得比率、取得日など）を可能な限り引用すること。
-※ 数値が不明な場合は「非公表」と明記し、推測で補わないこと。
+【絶対ルール】
+- 情報源（プレスリリース・EDINET・Web検索結果）に書かれている数値・事実のみを使用する
+- 情報源に存在しない企業名・数値・事実は絶対に捏造しない
+- 数値を引用する際は具体的に記載する（例：「売上高140.5億円」「取得価額6億円」）
+- データが不明な項目は「非公表」と1語で記し、一般論で埋めない
+
+以下の4セクションをMarkdown見出し（##）で出力してください。
 
 ## 案件概要
-（買い手・売り手の正式名称、証券コード、スキーム（株式取得/事業譲渡/TOB等）、取得比率、取得価額、取得予定日を整理。売り手の直近業績（売上高・営業利益・純資産）があれば必ず記載。）
+買い手・売り手それぞれの正式名称、証券コード、事業内容を明記。スキーム（株式取得/事業譲渡/TOB等）、取得比率、取得価額、取得予定日を整理。売り手の直近業績（売上高・営業利益・純資産）があれば必ず記載。プレスリリースに記載がある数値はすべて引用すること。
+
+## 買い手の財務分析
+EDINET財務データとWeb検索結果をもとに、買い手の直近業績推移（売上高・営業利益の成長率）、財務健全性（自己資本比率・有利子負債）、買収余力を分析。数値を具体的に示しながら評価する。
 
 ## 戦略的背景とシナジー
-（買い手がこの買収を行う理由を一次情報から分析。業界の構造変化、対象企業の強み・ポジション、期待されるシナジー効果を具体的に論述。）
+プレスリリースに記載された買収目的・期待効果を正確に引用したうえで、業界構造の文脈（市場規模、競合状況、成長トレンド）を踏まえて分析。買い手の中期戦略における本案件の位置づけを論じる。
 
 ## J-MAT総合評価
-（本案件の戦略的意義を総括。買収プレミアムの妥当性、PMI（買収後統合）の課題、今後のウォッチポイントを専門家目線で指摘。）"""
+本案件の戦略的意義を総括。取得価額の妥当性（EV/EBITDA倍率やPER等の参考値があれば言及）、PMI（買収後統合）における具体的課題、今後のウォッチポイント（業績への影響時期、のれん計上額、追加M&Aの可能性等）を指摘。最後の文は必ず「。」で終えること。"""
 
     return gemini_generate(prompt)
 
-def generate_analysis_comment(deal, financials, companies, press_text=""):
-    """財務分析コメントをLLMで生成（財務データ+プレスリリースベース）"""
+def generate_analysis_comment(deal, financials, companies, press_text="", web_supplement="", company_profile=""):
+    """財務分析コメントをLLMで生成（Word1枚分・約800-1200字）"""
     fin_text = ""
     for f in financials[:5]:
         fy = f.get("fiscal_year","")
@@ -549,38 +682,54 @@ def generate_analysis_comment(deal, financials, companies, press_text=""):
         oi = (f.get("operating_income",0) or 0) / 1e8
         ni = (f.get("net_income",0) or 0) / 1e8
         eq = (f.get("equity",0) or 0) / 1e8
-        fin_text += f"FY{fy}: 売上{rev:.1f}億 営業利益{oi:.1f}億 純利益{ni:.1f}億 純資産{eq:.1f}億\n"
+        ta = (f.get("total_assets",0) or 0) / 1e8
+        fin_text += f"FY{fy}: 売上{rev:.1f}億 営業利益{oi:.1f}億 純利益{ni:.1f}億 純資産{eq:.1f}億 総資産{ta:.1f}億\n"
 
     company_names = " / ".join([c.get("name","") for c in companies if c])
 
     press_nums = ""
     if press_text:
-        nums = re.findall(r'(?:売上高|営業利益|純利益|純資産|取得価額|取得価格)[\s:：は]*[\d,\.]+(?:万|百万|億)?円?', press_text[:1500])
+        nums = re.findall(r'(?:売上高|営業利益|純利益|純資産|取得価額|取得価格|自己資本比率|総資産|従業員)[\s:：は]*[\d,\.]+(?:万|百万|億|名|人|%)?円?', press_text[:2000])
         if nums:
-            press_nums = "プレスリリース記載の数値: " + " / ".join(nums[:8])
+            press_nums = "プレスリリース記載の数値: " + " / ".join(nums[:12])
 
-    prompt = f"""M&A専門アナリストとして、以下のデータに基づき財務分析コメントを書いてください。
+    prompt = f"""M&A専門アナリストとして、以下のすべてのデータを活用し、本格的な財務分析コメントを書いてください。
+800〜1200字（Word1ページ分）で、見出し付きの構造化された分析を出力してください。
 
 【案件】{deal['title']}
 【対象企業】{company_names if company_names else '不明'}
 
-{f'【EDINET財務データ（直近5年）】{chr(10)}{fin_text}' if fin_text else '【EDINET財務データ】取得不可'}
+{f'【EDINET財務データ（直近5年）】{chr(10)}{fin_text}' if fin_text else ''}
 
 {press_nums}
 
-【出力ルール】
-- 250〜350字で出力
-- 必ず以下3点に言及すること：
-  ① 買い手の財務的な買収余力（データがあれば自己資本比率・ネットDEレシオに言及、なければプレスリリースの数値を使用）
-  ② 売り手の収益性（営業利益率・売上規模から妥当性を評価）
-  ③ 今後の注目点（PMI・のれん計上・業績への影響見通し）
-- 数値は一次情報からの引用のみ。不明な場合は「開示情報からは確認できない」と明記
-- 「〜と考えられる」等の推量表現を適切に使い、断定を避ける"""
+{f'【Web検索で収集した追加情報】{chr(10)}{web_supplement[:1500]}' if web_supplement else ''}
+
+{f'【買い手の企業概要】{chr(10)}{company_profile[:1000]}' if company_profile else ''}
+
+【絶対ルール】
+- 情報源に記載のある数値・事実のみを使用する
+- 情報源にない企業名・数値は絶対に捏造しない
+- データがない項目は触れず、ある情報だけで深く分析する
+- 「一般的に〜」のような一般論は書かない
+
+以下の構成でMarkdown見出し（###）付きで出力してください。
+
+### 買い手の財務分析と買収余力
+EDINETデータ・Web検索結果から、売上高・営業利益の推移トレンド、自己資本比率、有利子負債の状況を分析。買収資金の調達方法（手元資金/借入/増資等）に言及できる場合は記載。
+
+### 売り手の事業価値評価
+プレスリリースに記載された売り手の業績データ（売上高・営業利益・純資産）をもとに、営業利益率や事業規模を評価。取得価額が判明している場合はEV/EBITDA倍率やPSR等で妥当性を検証。
+
+### 案件のリスクと注目点
+のれん計上額の見込み、PMI（買収後統合）の具体的課題、業績への影響が顕在化する時期、買い手の連結業績への影響度合いを分析。クロスボーダー案件の場合は為替リスクや規制リスクにも言及。
+
+最後の文は必ず「。」で終えること。"""
 
     return gemini_generate(prompt)
 
 # ======================
-# 業種別アイコン・カラーシステム（Pexels写真を廃止）
+# 業種別アイコン・カラーシステム
 # ======================
 INDUSTRY_STYLE = {
     "情報サービス業": {"icon": "💻", "color": "#2563eb", "bg": "#dbeafe"},
@@ -620,11 +769,64 @@ INDUSTRY_STYLE = {
 }
 DEFAULT_STYLE = {"icon": "🏢", "color": "#b8a878", "bg": "#f5f0e6"}
 
+# 業種→Pexels検索クエリ
+INDUSTRY_PEXELS_QUERY = {
+    "情報サービス業": "technology office",
+    "インターネット附随サービス業": "digital technology",
+    "通信業": "telecommunications network",
+    "建設業": "construction building",
+    "不動産業": "real estate building",
+    "医薬品製造業": "pharmaceutical laboratory",
+    "医療業": "healthcare medical",
+    "食料品製造業": "food manufacturing",
+    "飲食サービス業": "restaurant dining",
+    "機械器具製造業": "machinery factory",
+    "電気機械器具製造業": "electronics manufacturing",
+    "化学工業": "chemical industry",
+    "広告・マーケティング業": "marketing business",
+    "人材サービス業": "human resources office",
+    "教育・学習支援業": "education learning",
+    "その他金融業": "finance investment",
+    "銀行業": "banking finance",
+    "小売業": "retail shopping",
+    "卸売業": "warehouse logistics",
+    "運輸業": "transportation logistics",
+    "廃棄物処理業": "recycling environment",
+    "木材・木製品製造業": "timber woodworking",
+    "繊維工業": "textile fabric",
+    "娯楽業": "entertainment leisure",
+    "警備・メンテナンス業": "security maintenance",
+    "消防・防災設備業": "fire safety equipment",
+    "介護・社会福祉業": "elderly care welfare",
+    "宿泊業": "hotel hospitality",
+    "鉄鋼業": "steel industry",
+    "非鉄金属製造業": "metal mining",
+    "自動車・同附属品製造業": "automotive manufacturing",
+    "電気・ガス・熱供給・水道業": "energy power plant",
+    "農業": "agriculture farming",
+    "保険業": "insurance business",
+}
+
 def get_industry_style(industry):
     return INDUSTRY_STYLE.get(industry, DEFAULT_STYLE)
 
 def fetch_pexels_image(industry, seed):
-    """業種アイコンシステム移行のため、空文字を返す"""
+    """Pexels APIから業種に合った写真URLを取得"""
+    if not PEXELS_API_KEY:
+        return ""
+    query = INDUSTRY_PEXELS_QUERY.get(industry, "business corporate")
+    try:
+        r = requests.get("https://api.pexels.com/v1/search",
+                         params={"query": query, "per_page": 5, "page": 1},
+                         headers={"Authorization": PEXELS_API_KEY},
+                         timeout=10)
+        if r.status_code == 200:
+            photos = r.json().get("photos", [])
+            if photos:
+                idx = seed % len(photos)
+                return photos[idx].get("src", {}).get("medium", "")
+    except Exception as e:
+        print(f"  Pexels error: {e}")
     return ""
 
 # ======================
@@ -708,12 +910,20 @@ for i, deal in enumerate(ma_deals[:20]):
     article_body = ""
     analysis_comment = ""
     if i < 5:
+        # Web検索で追加情報を収集
+        print(f"  Web検索で情報補完中...")
+        main_company_name = companies_data[0]["name"] if companies_data else cn_short
+        main_sec_code = sec_codes[0] if sec_codes else ""
+        web_supplement = web_search_supplement(deal["title"], main_company_name, main_sec_code)
+        company_profile = fetch_company_profile_web(main_company_name, main_sec_code)
+        time.sleep(1)
+
         print(f"  LLM記事生成中...")
-        article_body = generate_article(deal, press_text, financials_all)
+        article_body = generate_article(deal, press_text, financials_all, web_supplement, company_profile)
 
         print(f"  LLM分析コメント生成中...")
         analysis_comment = generate_analysis_comment(
-            deal, financials_all, companies_data, press_text
+            deal, financials_all, companies_data, press_text, web_supplement, company_profile
         )
         time.sleep(1)
 
