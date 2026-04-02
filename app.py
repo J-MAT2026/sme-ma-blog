@@ -3,7 +3,7 @@
 J-MAT Daily M&A News Generator
 - 案件抽出: maonline.jp / nihon-ma.co.jp / marr.jp
 - 記事生成: Gemini API (一次情報ベース)
-- 財務分析: EDINETDB + matplotlib グラフ生成
+- 財務分析: EDINETDB (search + financials のみ) + matplotlib グラフ生成
 - 更新: 1日2回 (9:01 / 17:01 JST)
 """
 import datetime, os, re, json, time, base64, io, hashlib
@@ -326,30 +326,12 @@ def edinetdb_financials(edinet_code):
         print(f"  EDINETDB financials error: {e}")
     return []
 
-def edinetdb_analysis(edinet_code):
-    if not EDINETDB_API_KEY:
-        return {}
-    try:
-        r = requests.get(f"{EDINETDB_BASE}/companies/{edinet_code}/analysis",
-                         headers=EDINETDB_HEADERS, timeout=10)
-        if r.status_code == 200:
-            return r.json().get("data", {})
-    except Exception as e:
-        print(f"  EDINETDB analysis error: {e}")
-    return {}
+## analysis廃止: credit_scoreしか使っておらず、分析品質への影響が小さい。
+## API呼び出し1回+レスポンス処理のコスト削減。
 
-def edinetdb_text_blocks(edinet_code):
-    """有報テキスト（事業計画・中期経営計画）"""
-    if not EDINETDB_API_KEY:
-        return {}
-    try:
-        r = requests.get(f"{EDINETDB_BASE}/companies/{edinet_code}/text-blocks",
-                         headers=EDINETDB_HEADERS, timeout=10)
-        if r.status_code == 200:
-            return r.json().get("data", {})
-    except Exception as e:
-        print(f"  EDINETDB text-blocks error: {e}")
-    return {}
+## text-blocks廃止: 有報テキストは巨大でトークン消費が大きい割に
+## generate_article/generate_analysis_commentで400-800字しか使わない。
+## プレスリリース本文+財務データで十分な分析品質を確保できる。
 
 # ======================
 # 株価取得（Yahoo Finance Japan）
@@ -511,7 +493,7 @@ def claude_generate(prompt):
 def gemini_generate(prompt, retry=1):
     return groq_generate(prompt)
 
-def generate_article(deal, press_text, financials, analysis, text_blocks):
+def generate_article(deal, press_text, financials):
     """LLMでプロ水準のM&A分析記事を生成（一次情報ベース）"""
     fin_summary = ""
     if financials:
@@ -523,22 +505,6 @@ def generate_article(deal, press_text, financials, analysis, text_blocks):
             ta = (f.get("total_assets",0) or 0) / 1e8
             eq = (f.get("equity",0) or 0) / 1e8
             fin_summary += f"FY{fy}: 売上{rev:.1f}億円 / 営業利益{oi:.1f}億円 / 純利益{ni:.1f}億円 / 総資産{ta:.1f}億円 / 純資産{eq:.1f}億円\n"
-
-    biz_plan = ""
-    if isinstance(text_blocks, list):
-        tb_dict = {}
-        for item in text_blocks:
-            if isinstance(item, dict):
-                tb_dict.update(item)
-        text_blocks = tb_dict
-    if isinstance(text_blocks, dict) and text_blocks:
-        for key in ["business_strategy","management_policy","mid_term_plan","risks"]:
-            val = text_blocks.get(key,"")
-            if val:
-                biz_plan += val[:500]
-                break
-
-    credit = analysis.get("credit_score","") if analysis else ""
 
     if press_text and len(press_text) > 100:
         info_section = f"【適時開示・プレスリリース本文】\n{press_text[:1500]}"
@@ -557,10 +523,6 @@ def generate_article(deal, press_text, financials, analysis, text_blocks):
 
 {f'【買い手の財務データ（直近3年）】{chr(10)}{fin_summary}' if fin_summary else '【財務データ】EDINETから取得できず。プレスリリース内の数値を使用してください。'}
 
-{f'【信用スコア】{credit}/100' if credit else ''}
-
-{f'【中期経営計画・事業方針】{biz_plan[:400]}' if biz_plan else ''}
-
 {nums_info}
 
 以下の4セクションで出力してください。Markdown見出し（##）で区切ること。
@@ -578,8 +540,8 @@ def generate_article(deal, press_text, financials, analysis, text_blocks):
 
     return gemini_generate(prompt)
 
-def generate_analysis_comment(deal, financials, text_blocks, companies, press_text=""):
-    """財務分析コメントをLLMで生成（EDINETDB不要のフォールバック対応）"""
+def generate_analysis_comment(deal, financials, companies, press_text=""):
+    """財務分析コメントをLLMで生成（財務データ+プレスリリースベース）"""
     fin_text = ""
     for f in financials[:5]:
         fy = f.get("fiscal_year","")
@@ -588,20 +550,6 @@ def generate_analysis_comment(deal, financials, text_blocks, companies, press_te
         ni = (f.get("net_income",0) or 0) / 1e8
         eq = (f.get("equity",0) or 0) / 1e8
         fin_text += f"FY{fy}: 売上{rev:.1f}億 営業利益{oi:.1f}億 純利益{ni:.1f}億 純資産{eq:.1f}億\n"
-
-    biz_plan = ""
-    if isinstance(text_blocks, list):
-        tb_dict = {}
-        for item in text_blocks:
-            if isinstance(item, dict):
-                tb_dict.update(item)
-        text_blocks = tb_dict
-    if isinstance(text_blocks, dict) and text_blocks:
-        for key in ["mid_term_plan","business_strategy","management_policy"]:
-            val = text_blocks.get(key,"")
-            if val:
-                biz_plan = val[:800]
-                break
 
     company_names = " / ".join([c.get("name","") for c in companies if c])
 
@@ -617,8 +565,6 @@ def generate_analysis_comment(deal, financials, text_blocks, companies, press_te
 【対象企業】{company_names if company_names else '不明'}
 
 {f'【EDINET財務データ（直近5年）】{chr(10)}{fin_text}' if fin_text else '【EDINET財務データ】取得不可'}
-
-{f'【中期経営計画】{biz_plan[:400]}' if biz_plan else ''}
 
 {press_nums}
 
@@ -727,10 +673,9 @@ for i, deal in enumerate(ma_deals[:20]):
     sec_code_matches = re.findall(r'＜(\w{4,5})＞', deal["title"])
     print(f"  証券コード: {sec_code_matches}")
 
-    # EDINETDB照合（証券コードで検索）
+    # EDINETDB照合（証券コードで検索）— search + financials のみ（トークン最適化）
     companies_data = []
     financials_all = []
-    text_blocks_all = {}
     sec_codes = []
     for scode in sec_code_matches[:2]:
         co = edinetdb_search(scode)
@@ -738,14 +683,10 @@ for i, deal in enumerate(ma_deals[:20]):
             ec = co.get("edinet_code","")
             sc = co.get("sec_code","")
             fins = edinetdb_financials(ec)
-            ana = edinetdb_analysis(ec)
-            txts = edinetdb_text_blocks(ec)
-            print(f"    EDINETDB: {co.get('name','')} ({ec}) score={ana.get('credit_score','N/A') if ana else 'N/A'}")
-            companies_data.append({"name": co.get("name",""), "edinet_code": ec, "sec_code": sc, "analysis": ana})
+            print(f"    EDINETDB: {co.get('name','')} ({ec})")
+            companies_data.append({"name": co.get("name",""), "edinet_code": ec, "sec_code": sc})
             if fins:
                 financials_all = fins
-            if txts:
-                text_blocks_all = txts
             if sc:
                 sec_codes.append(sc)
         else:
@@ -768,13 +709,11 @@ for i, deal in enumerate(ma_deals[:20]):
     analysis_comment = ""
     if i < 5:
         print(f"  LLM記事生成中...")
-        article_body = generate_article(deal, press_text, financials_all,
-                                        companies_data[0].get("analysis",{}) if companies_data else {},
-                                        text_blocks_all)
+        article_body = generate_article(deal, press_text, financials_all)
 
         print(f"  LLM分析コメント生成中...")
         analysis_comment = generate_analysis_comment(
-            deal, financials_all, text_blocks_all, companies_data, press_text
+            deal, financials_all, companies_data, press_text
         )
         time.sleep(1)
 
