@@ -49,9 +49,11 @@ title: J-MAT | 日本最大級M&Aニュース
     {% assign f = featured[0] %}
     <div class="featured-card featured-card--main">
       <a href="{% if f.link contains 'http' %}{{ f.link }}{% else %}{{ site.baseurl }}{{ f.link }}{% endif %}" class="featured-card-link">
-        <div class="featured-img-wrap">
+        <div class="featured-img-wrap {% unless f.image and f.image != '' %}featured-img-fallback{% endunless %}">
+          {% if f.image and f.image != "" %}
           <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
                onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
+          {% endif %}
           <div class="featured-cat">{{ f.industry }}</div>
           <div class="featured-rank">#1</div>
         </div>
@@ -76,9 +78,11 @@ title: J-MAT | 日本最大級M&Aニュース
         {% if f.rank >= 2 %}
         <div class="featured-card featured-card--sub">
           <a href="{% if f.link contains 'http' %}{{ f.link }}{% else %}{{ site.baseurl }}{{ f.link }}{% endif %}">
-            <div class="featured-img-wrap">
+            <div class="featured-img-wrap {% unless f.image and f.image != '' %}featured-img-fallback{% endunless %}">
+              {% if f.image and f.image != "" %}
               <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
                    onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
+              {% endif %}
               <div class="featured-cat">{{ f.industry }}</div>
               <div class="featured-rank">#{{ f.rank }}</div>
             </div>
@@ -106,9 +110,11 @@ title: J-MAT | 日本最大級M&Aニュース
     {% assign f = featured[0] %}
     <div class="featured-card featured-card--main">
       <a href="{% if f.link contains 'http' %}{{ f.link }}{% else %}{{ site.baseurl }}{{ f.link }}{% endif %}" class="featured-card-link">
-        <div class="featured-img-wrap">
+        <div class="featured-img-wrap {% unless f.image and f.image != '' %}featured-img-fallback{% endunless %}">
+          {% if f.image and f.image != "" %}
           <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
                onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
+          {% endif %}
           <div class="featured-cat">{{ f.industry }}</div>
           <div class="featured-rank">#1</div>
         </div>
@@ -133,9 +139,11 @@ title: J-MAT | 日本最大級M&Aニュース
         {% if f.rank >= 2 %}
         <div class="featured-card featured-card--sub">
           <a href="{% if f.link contains 'http' %}{{ f.link }}{% else %}{{ site.baseurl }}{{ f.link }}{% endif %}">
-            <div class="featured-img-wrap">
+            <div class="featured-img-wrap {% unless f.image and f.image != '' %}featured-img-fallback{% endunless %}">
+              {% if f.image and f.image != "" %}
               <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
                    onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
+              {% endif %}
               <div class="featured-cat">{{ f.industry }}</div>
               <div class="featured-rank">#{{ f.rank }}</div>
             </div>
