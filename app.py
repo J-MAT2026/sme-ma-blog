@@ -21,6 +21,8 @@ EDINETDB_HEADERS = {"X-API-Key": EDINETDB_API_KEY}
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "llama-3.3-70b-versatile"  # 無料・高速・高品質
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+GEMINI_MODEL = "gemini-2.5-flash"  # 長文記事生成に使用
 
 # ======================
 # 経産省業種分類（優先度順・キーワード拡充）
@@ -478,36 +480,101 @@ def generate_charts(financials, stock_prices, company_name):
 # Gemini APIで記事生成
 # ======================
 def groq_generate(prompt):
-    """Groq APIで記事・分析コメントを生成（無料・高速）"""
+    """Groq APIで記事・分析コメントを生成（429リトライ付き）"""
     if not GROQ_API_KEY:
         print("  Groq API: APIキー未設定")
         return ""
-    try:
-        headers = {
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "model": GROQ_MODEL,
-            "messages": [
-                {"role": "system", "content": "あなたはM&A専門メディアのシニアアナリストです。正確で簡潔な日本語で出力してください。Markdown形式で出力し、余計なメタコメントや注釈は一切含めないでください。"},
-                {"role": "user", "content": prompt}
-            ],
-            "max_tokens": 2000,
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": "あなたはM&A専門メディアのシニアアナリストです。正確で簡潔な日本語で出力してください。Markdown形式で出力し、余計なメタコメントや注釈は一切含めないでください。"},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 2000,
+        "temperature": 0.4,
+    }
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60)
+            if r.status_code == 429 or r.status_code == 529:
+                wait = 10 * (2 ** attempt)  # 10s → 20s → 40s
+                print(f"  Groq rate limit (attempt {attempt+1}/{max_retries}), waiting {wait}s...")
+                time.sleep(wait)
+                continue
+            result = r.json()
+            if "error" in result:
+                print(f"  Groq error: {result['error'].get('message','')[:100]}")
+                return ""
+            choices = result.get("choices", [])
+            if choices:
+                text = choices[0].get("message", {}).get("content", "").strip()
+                return clean_llm_output(text)
+        except Exception as e:
+            print(f"  Groq API error: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(5)
+    print("  Groq: リトライ上限到達")
+    return ""
+
+def gemini_generate(prompt, retry=1):
+    """Gemini APIで長文記事を生成（429リトライ付き）"""
+    if not GEMINI_API_KEY:
+        print("  Gemini API: APIキー未設定、Groqにフォールバック")
+        return groq_generate(prompt)
+    url = f"{GEMINI_URL}/{GEMINI_MODEL}:generateContent"
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY,
+    }
+    payload = {
+        "contents": [
+            {
+                "parts": [{"text": prompt}],
+                "role": "user"
+            }
+        ],
+        "systemInstruction": {
+            "parts": [{"text": "あなたはM&A専門メディアのシニアアナリストです。正確で簡潔な日本語で出力してください。Markdown形式で出力し、余計なメタコメントや注釈は一切含めないでください。"}]
+        },
+        "generationConfig": {
+            "maxOutputTokens": 2000,
             "temperature": 0.4,
         }
-        r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=45)
-        result = r.json()
-        if "error" in result:
-            print(f"  Groq error: {result['error'].get('message','')[:100]}")
-            return ""
-        choices = result.get("choices", [])
-        if choices:
-            text = choices[0].get("message", {}).get("content", "").strip()
-            return clean_llm_output(text)
-    except Exception as e:
-        print(f"  Groq API error: {e}")
-    return ""
+    }
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            r = requests.post(url, headers=headers, json=payload, timeout=60)
+            if r.status_code == 429 or r.status_code == 529:
+                wait = 10 * (2 ** attempt)
+                print(f"  Gemini rate limit (attempt {attempt+1}/{max_retries}), waiting {wait}s...")
+                time.sleep(wait)
+                continue
+            if r.status_code != 200:
+                print(f"  Gemini HTTP {r.status_code}: {r.text[:200]}")
+                break
+            result = r.json()
+            candidates = result.get("candidates", [])
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                text = "".join(p.get("text", "") for p in parts).strip()
+                if text:
+                    return clean_llm_output(text)
+            # 空レスポンスの場合
+            print("  Gemini: 空レスポンス")
+            break
+        except Exception as e:
+            print(f"  Gemini API error: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(5)
+    # Gemini失敗時はGroqにフォールバック
+    print("  Gemini失敗、Groqにフォールバック")
+    return groq_generate(prompt)
 
 def clean_llm_output(text):
     """LLM出力のクリーンアップ"""
@@ -525,12 +592,8 @@ def clean_llm_output(text):
     text = text.strip()
     return text
 
-# 後方互換のためエイリアスを定義
-def claude_generate(prompt):
-    return groq_generate(prompt)
-
-def gemini_generate(prompt, retry=1):
-    return groq_generate(prompt)
+# generate_article → Gemini（長文記事）
+# generate_analysis_comment → Groq（短文分析コメント）
 
 def generate_article(deal, press_text, financials, analysis, text_blocks):
     """LLMでプロ水準のM&A分析記事を生成（一次情報ベース）"""
@@ -653,7 +716,7 @@ def generate_analysis_comment(deal, financials, text_blocks, companies, press_te
 - 数値は一次情報からの引用のみ。不明な場合は「開示情報からは確認できない」と明記
 - 「〜と考えられる」等の推量表現を適切に使い、断定を避ける"""
 
-    return gemini_generate(prompt)
+    return groq_generate(prompt)
 
 # ======================
 # 業種別アイコン・カラーシステム（Pexels写真を廃止）
@@ -841,15 +904,16 @@ for i, deal in enumerate(ma_deals[:20]):
     article_body = ""
     analysis_comment = ""
     if i < 5:
-        print(f"  LLM記事生成中...")
+        print(f"  Gemini記事生成中...")
         article_body = generate_article(deal, press_text, financials_all,
                                         companies_data[0].get("analysis",{}) if companies_data else {},
                                         text_blocks_all)
-        print(f"  LLM分析コメント生成中...")
+        time.sleep(3)  # Gemini→Groq間で少し待つ
+        print(f"  Groq分析コメント生成中...")
         analysis_comment = generate_analysis_comment(
             deal, financials_all, text_blocks_all, companies_data, press_text
         )
-        time.sleep(1)
+        time.sleep(5)  # 次の案件のAPI呼び出しまで間隔を空ける
 
     seed = abs(hash(deal["title"])) % 100
     img_url = fetch_pexels_image(industry, seed)
