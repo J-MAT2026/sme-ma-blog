@@ -8,9 +8,15 @@ title: J-MAT | 日本最大級M&Aニュース
 {% endcomment %}
 
 {% assign today_posts = "" | split: "" %}
-{% assign latest_date = site.posts.first.date | date: "%Y-%m-%d" %}
+{% assign latest_date = "" %}
+{% for p in site.posts limit:50 %}
+  {% if p.featured %}
+    {% assign latest_date = p.date | date: "%Y-%m-%d" %}
+    {% break %}
+  {% endif %}
+{% endfor %}
 
-{% for p in site.posts limit:14 %}
+{% for p in site.posts limit:50 %}
   {% assign p_date = p.date | date: "%Y-%m-%d" %}
   {% if p_date == latest_date and p.featured %}
     {% assign today_posts = today_posts | push: p %}
@@ -28,13 +34,6 @@ title: J-MAT | 日本最大級M&Aニュース
   {% endif %}
 {% endfor %}
 
-{% comment %} 最新日に1件しかなければそれを表示 {% endcomment %}
-{% unless morning_post or evening_post %}
-  {% if site.posts.first.featured %}
-    {% assign morning_post = site.posts.first %}
-  {% endif %}
-{% endunless %}
-
 <div class="top-layout">
 
   <!-- 左：ピックアップ（朝刊＋夕刊） -->
@@ -45,57 +44,40 @@ title: J-MAT | 日本最大級M&Aニュース
     <h2 class="section-title">Today's Featured — 夕刊</h2>
     {% assign featured = evening_post.featured %}
 
-    <!-- 1位：大カード -->
     {% assign f = featured[0] %}
     <div class="featured-card featured-card--main">
       <a href="{% if f.link contains 'http' %}{{ f.link }}{% else %}{{ site.baseurl }}{{ f.link }}{% endif %}" class="featured-card-link">
         <div class="featured-img-wrap {% unless f.image and f.image != '' %}featured-img-fallback{% endunless %}">
           {% if f.image and f.image != "" %}
-          <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
-               onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
+          <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy" onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
           {% endif %}
           <div class="featured-cat">{{ f.industry }}</div>
           <div class="featured-rank">#1</div>
         </div>
         <div class="featured-body">
           <div class="featured-title">{{ f.title }}</div>
-          {% if f.analysis %}
-          <div class="featured-analysis">📊 {{ f.analysis | truncate: 160 }}</div>
-          {% endif %}
-          {% if f.chart_pl != "" %}
-          <div class="featured-charts">
-            <img src="{{ site.baseurl }}{{ f.chart_pl }}" alt="PL推移" class="chart-img" loading="lazy">
-          </div>
-          {% endif %}
+          {% if f.analysis %}<div class="featured-analysis">📊 {{ f.analysis | truncate: 160 }}</div>{% endif %}
+          {% if f.chart_pl != "" %}<div class="featured-charts"><img src="{{ site.baseurl }}{{ f.chart_pl }}" alt="PL推移" class="chart-img" loading="lazy"></div>{% endif %}
           <div class="featured-press-link">▶ 詳細分析を読む →</div>
         </div>
       </a>
     </div>
-
-    <!-- 2〜5位：小カード2列 -->
     <div class="featured-grid">
-      {% for f in featured %}
-        {% if f.rank >= 2 %}
-        <div class="featured-card featured-card--sub">
-          <a href="{% if f.link contains 'http' %}{{ f.link }}{% else %}{{ site.baseurl }}{{ f.link }}{% endif %}">
-            <div class="featured-img-wrap {% unless f.image and f.image != '' %}featured-img-fallback{% endunless %}">
-              {% if f.image and f.image != "" %}
-              <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
-                   onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
-              {% endif %}
-              <div class="featured-cat">{{ f.industry }}</div>
-              <div class="featured-rank">#{{ f.rank }}</div>
-            </div>
-            <div class="featured-body">
-              <div class="featured-title">{{ f.title }}</div>
-              {% if f.analysis %}
-              <div class="featured-analysis-mini">{{ f.analysis | truncate: 80 }}</div>
-              {% endif %}
-            </div>
-          </a>
-        </div>
-        {% endif %}
-      {% endfor %}
+      {% for f in featured %}{% if f.rank >= 2 %}
+      <div class="featured-card featured-card--sub">
+        <a href="{% if f.link contains 'http' %}{{ f.link }}{% else %}{{ site.baseurl }}{{ f.link }}{% endif %}">
+          <div class="featured-img-wrap {% unless f.image and f.image != '' %}featured-img-fallback{% endunless %}">
+            {% if f.image and f.image != "" %}<img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy" onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">{% endif %}
+            <div class="featured-cat">{{ f.industry }}</div>
+            <div class="featured-rank">#{{ f.rank }}</div>
+          </div>
+          <div class="featured-body">
+            <div class="featured-title">{{ f.title }}</div>
+            {% if f.analysis %}<div class="featured-analysis-mini">{{ f.analysis | truncate: 80 }}</div>{% endif %}
+          </div>
+        </a>
+      </div>
+      {% endif %}{% endfor %}
     </div>
     {% endif %}
 
@@ -106,57 +88,40 @@ title: J-MAT | 日本最大級M&Aニュース
     </h2>
     {% assign featured = morning_post.featured %}
 
-    <!-- 1位：大カード -->
     {% assign f = featured[0] %}
     <div class="featured-card featured-card--main">
       <a href="{% if f.link contains 'http' %}{{ f.link }}{% else %}{{ site.baseurl }}{{ f.link }}{% endif %}" class="featured-card-link">
         <div class="featured-img-wrap {% unless f.image and f.image != '' %}featured-img-fallback{% endunless %}">
           {% if f.image and f.image != "" %}
-          <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
-               onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
+          <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy" onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
           {% endif %}
           <div class="featured-cat">{{ f.industry }}</div>
           <div class="featured-rank">#1</div>
         </div>
         <div class="featured-body">
           <div class="featured-title">{{ f.title }}</div>
-          {% if f.analysis %}
-          <div class="featured-analysis">📊 {{ f.analysis | truncate: 160 }}</div>
-          {% endif %}
-          {% if f.chart_pl != "" %}
-          <div class="featured-charts">
-            <img src="{{ site.baseurl }}{{ f.chart_pl }}" alt="PL推移" class="chart-img" loading="lazy">
-          </div>
-          {% endif %}
+          {% if f.analysis %}<div class="featured-analysis">📊 {{ f.analysis | truncate: 160 }}</div>{% endif %}
+          {% if f.chart_pl != "" %}<div class="featured-charts"><img src="{{ site.baseurl }}{{ f.chart_pl }}" alt="PL推移" class="chart-img" loading="lazy"></div>{% endif %}
           <div class="featured-press-link">▶ 詳細分析を読む →</div>
         </div>
       </a>
     </div>
-
-    <!-- 2〜5位：小カード2列 -->
     <div class="featured-grid">
-      {% for f in featured %}
-        {% if f.rank >= 2 %}
-        <div class="featured-card featured-card--sub">
-          <a href="{% if f.link contains 'http' %}{{ f.link }}{% else %}{{ site.baseurl }}{{ f.link }}{% endif %}">
-            <div class="featured-img-wrap {% unless f.image and f.image != '' %}featured-img-fallback{% endunless %}">
-              {% if f.image and f.image != "" %}
-              <img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy"
-                   onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">
-              {% endif %}
-              <div class="featured-cat">{{ f.industry }}</div>
-              <div class="featured-rank">#{{ f.rank }}</div>
-            </div>
-            <div class="featured-body">
-              <div class="featured-title">{{ f.title }}</div>
-              {% if f.analysis %}
-              <div class="featured-analysis-mini">{{ f.analysis | truncate: 80 }}</div>
-              {% endif %}
-            </div>
-          </a>
-        </div>
-        {% endif %}
-      {% endfor %}
+      {% for f in featured %}{% if f.rank >= 2 %}
+      <div class="featured-card featured-card--sub">
+        <a href="{% if f.link contains 'http' %}{{ f.link }}{% else %}{{ site.baseurl }}{{ f.link }}{% endif %}">
+          <div class="featured-img-wrap {% unless f.image and f.image != '' %}featured-img-fallback{% endunless %}">
+            {% if f.image and f.image != "" %}<img src="{{ f.image }}" alt="{{ f.title }}" class="featured-img" loading="lazy" onerror="this.style.display='none'; this.parentNode.classList.add('featured-img-fallback');">{% endif %}
+            <div class="featured-cat">{{ f.industry }}</div>
+            <div class="featured-rank">#{{ f.rank }}</div>
+          </div>
+          <div class="featured-body">
+            <div class="featured-title">{{ f.title }}</div>
+            {% if f.analysis %}<div class="featured-analysis-mini">{{ f.analysis | truncate: 80 }}</div>{% endif %}
+          </div>
+        </a>
+      </div>
+      {% endif %}{% endfor %}
     </div>
     {% endif %}
 
@@ -177,31 +142,21 @@ title: J-MAT | 日本最大級M&Aニュース
     {% assign headline_count = headline_count | plus: 1 %}
     {% if headline_count > 7 %}{% break %}{% endif %}
     <div class="headline-group">
-      <button class="headline-group-btn {% if forloop.first %}active{% endif %}"
-              onclick="toggleGroup(this)">
+      <button class="headline-group-btn {% if forloop.first %}active{% endif %}" onclick="toggleGroup(this)">
         <span class="headline-group-date">{{ post.date | date: "%Y年%m月%d日" }}
           {% if post.slot == "morning" %}朝刊{% else %}夕刊{% endif %}
         </span>
-        <span class="headline-group-count">
-          {% if post.headlines %}{{ post.headlines | size }}件{% else %}-{% endif %}
-        </span>
+        <span class="headline-group-count">{{ post.headlines | size }}件</span>
         <span class="headline-group-arrow">▾</span>
       </button>
-
       <div class="headline-list {% if forloop.first %}open{% endif %}">
-        {% if post.headlines %}
-          {% for h in post.headlines %}
-          <a href="{{ h.link }}" class="headline-item" target="_blank" rel="noopener">
-            <span class="headline-cat">{{ h.industry | truncate: 14, "" }}</span>
-            <span class="headline-text">{{ h.title }}</span>
-            <span class="headline-arrow">↗</span>
-          </a>
-          {% endfor %}
-        {% else %}
-          <div class="headline-item">
-            <span class="headline-text" style="color:#aaa">準備中...</span>
-          </div>
-        {% endif %}
+        {% for h in post.headlines %}
+        <a href="{{ h.link }}" class="headline-item" target="_blank" rel="noopener">
+          <span class="headline-cat">{{ h.industry | truncate: 14, "" }}</span>
+          <span class="headline-text">{{ h.title }}</span>
+          <span class="headline-arrow">↗</span>
+        </a>
+        {% endfor %}
       </div>
     </div>
     {% endfor %}
@@ -216,9 +171,6 @@ function toggleGroup(btn) {
   const isOpen = list.classList.contains('open');
   document.querySelectorAll('.headline-list').forEach(el => el.classList.remove('open'));
   document.querySelectorAll('.headline-group-btn').forEach(el => el.classList.remove('active'));
-  if (!isOpen) {
-    list.classList.add('open');
-    btn.classList.add('active');
-  }
+  if (!isOpen) { list.classList.add('open'); btn.classList.add('active'); }
 }
 </script>
