@@ -61,7 +61,7 @@ METI_INDUSTRY_MAP = [
     ("その他金融業", ["ファンド", "リース", "ファクタリング", "投資", "MBO", "TOB"]),
     ("宿泊業", ["ホテル", "旅館", "宿泊"]),
     ("娯楽業", ["ゲーム", "エンタメ", "映画", "音楽", "アミューズメント", "カラオケ"]),
-    ("警備・メンテナンス業", ["メンテナンス", "保守", "点検", "警備", "施設管理", "ビル管理"]),
+    ("警備・メンテナンス業", ["警備会社", "警備業", "ビルメンテナンス", "ビル管理", "施設管理業", "設備保守"]),
     ("農業", ["農業", "農産", "農協", "農場"]),
     ("林業", ["林業"]),
     ("漁業", ["漁業", "養殖"]),
@@ -857,6 +857,11 @@ for art in featured_data:
         art[f"chart_{chart_type}_path"] = f"/{fname}"
         print(f"  チャート保存: {fname}")
 
+# headline_dataが空の場合はまとめ記事を生成しない（「準備中」ポスト防止）
+if not headline_data:
+    print("ヘッドライン0件。まとめ記事の生成をスキップします。")
+    exit(0)
+
 # メイン記事（今回のスロット）
 filename = f"_posts/{today_str}-{slot}-ma-news.md"
 
@@ -866,14 +871,22 @@ for f in featured_data:
     safe_title = f["pro_title"].replace('"',"'")
     safe_press = f["press_url"].replace('"',"'")
     safe_industry = f["industry"].replace('"',"'")
-    safe_analysis = f["analysis_comment"].replace('"',"'").replace('\n',' ')[:300] if f["analysis_comment"] else ""
+    safe_analysis = ""
+    if f["analysis_comment"]:
+        # Markdown見出し(###等)・装飾を除去してプレーンテキスト化
+        _ac = f["analysis_comment"]
+        _ac = re.sub(r'^#{1,4}\s+.*$', '', _ac, flags=re.MULTILINE)  # 見出し行を除去
+        _ac = re.sub(r'\*\*([^*]+)\*\*', r'\1', _ac)                 # 太字を除去
+        _ac = re.sub(r'\n{2,}', ' ', _ac).strip()
+        safe_analysis = _ac.replace('"',"'").replace('\n',' ')[:300]
     chart_pl = f.get("chart_pl_path","")
     chart_stock = f.get("chart_stock_path","")
 
     # ★修正: 個別deal記事への内部リンクを生成
+    # Jekyllはファイル名から日付部分を除去してslugにするため、日付を二重に含めない
     slug = hashlib.md5(f["title"].encode()).hexdigest()[:8]
     y, m, d = today_str.split("-")
-    deal_permalink = f"/{y}/{m}/{d}/{today_str}-{slot}-deal-{slug}.html"
+    deal_permalink = f"/{y}/{m}/{d}/{slot}-deal-{slug}.html"
 
     featured_yaml += f'  - rank: {f["rank"]}\n'
     featured_yaml += f'    title: "{safe_title}"\n'
@@ -961,7 +974,11 @@ for art in featured_data:
     safe_deal_industry = art["industry"].replace('"', "'")
     safe_deal_summary = ""
     if art["analysis_comment"]:
-        safe_deal_summary = art["analysis_comment"].replace('"', "'").replace('\n', ' ')[:200]
+        _ds = art["analysis_comment"]
+        _ds = re.sub(r'^#{1,4}\s+.*$', '', _ds, flags=re.MULTILINE)
+        _ds = re.sub(r'\*\*([^*]+)\*\*', r'\1', _ds)
+        _ds = re.sub(r'\n{2,}', ' ', _ds).strip()
+        safe_deal_summary = _ds.replace('"', "'").replace('\n', ' ')[:200]
     parent_slug = f"{today_str}-{slot}-ma-news"
 
     deal_content = f"""---
