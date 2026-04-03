@@ -171,7 +171,11 @@ title: J-MAT | 日本最大級M&Aニュース
   <div class="headline-section">
     <h2 class="section-title">Headlines</h2>
 
-    {% for post in site.posts limit:7 %}
+    {% assign headline_count = 0 %}
+    {% for post in site.posts limit:50 %}
+    {% unless post.headlines %}{% continue %}{% endunless %}
+    {% assign headline_count = headline_count | plus: 1 %}
+    {% if headline_count > 7 %}{% break %}{% endif %}
     <div class="headline-group">
       <button class="headline-group-btn {% if forloop.first %}active{% endif %}"
               onclick="toggleGroup(this)">

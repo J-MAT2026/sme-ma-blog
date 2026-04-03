@@ -396,15 +396,34 @@ def generate_charts(financials, stock_prices, company_name):
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import matplotlib.ticker as mtick
-        import subprocess
+        import subprocess, glob as _glob, os as _os
+        import matplotlib.font_manager as fm
+        # フォントインストール
         subprocess.run(["apt-get", "install", "-y", "-q", "fonts-noto-cjk"],
                        capture_output=True)
-        import matplotlib.font_manager as fm
+        # キャッシュクリア＆再スキャン
+        cache_dir = fm.get_cachedir()
+        for _f in _glob.glob(_os.path.join(cache_dir, "*.json")) + _glob.glob(_os.path.join(cache_dir, "*.cache")):
+            try: _os.remove(_f)
+            except: pass
         fm._load_fontmanager(try_read_cache=False)
-        for fname in ["Noto Sans CJK JP", "IPAexGothic", "DejaVu Sans"]:
-            if any(fname in f.name for f in fm.fontManager.ttflist):
-                plt.rcParams["font.family"] = fname
+        # TTFファイルを直接検索して確実に設定
+        font_set = False
+        for pattern in ["/usr/share/fonts/**/NotoSansCJK*.otf", "/usr/share/fonts/**/NotoSansCJK*.ttc",
+                        "/usr/share/fonts/**/Noto*CJK*JP*.otf", "/usr/share/fonts/**/ipag*.ttf"]:
+            files = _glob.glob(pattern, recursive=True)
+            if files:
+                fm.fontManager.addfont(files[0])
+                prop = fm.FontProperties(fname=files[0])
+                plt.rcParams["font.family"] = prop.get_name()
+                font_set = True
                 break
+        if not font_set:
+            for fname in ["Noto Sans CJK JP", "IPAexGothic", "DejaVu Sans"]:
+                if any(fname in f.name for f in fm.fontManager.ttflist):
+                    plt.rcParams["font.family"] = fname
+                    font_set = True
+                    break
 
         if financials:
             years = [str(f.get("fiscal_year","")) for f in financials]
@@ -854,7 +873,7 @@ for f in featured_data:
     # ★修正: 個別deal記事への内部リンクを生成
     slug = hashlib.md5(f["title"].encode()).hexdigest()[:8]
     y, m, d = today_str.split("-")
-    deal_permalink = f"/{y}/{m}/{d}/{slot}-deal-{slug}.html"
+    deal_permalink = f"/{y}/{m}/{d}/{today_str}-{slot}-deal-{slug}.html"
 
     featured_yaml += f'  - rank: {f["rank"]}\n'
     featured_yaml += f'    title: "{safe_title}"\n'
