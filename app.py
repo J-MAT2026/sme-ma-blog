@@ -700,7 +700,59 @@ def get_industry_style(industry):
     return INDUSTRY_STYLE.get(industry, DEFAULT_STYLE)
 
 def fetch_pexels_image(industry, seed):
-    """業種アイコンシステム移行のため、空文字を返す"""
+    """Pexels APIで業種に関連するフリー画像を取得"""
+    if not PEXELS_API_KEY:
+        return ""
+    # 業種→英語検索クエリのマッピング
+    INDUSTRY_QUERY = {
+        "情報サービス業": "technology office",
+        "インターネット附随サービス業": "internet digital",
+        "通信業": "telecommunications network",
+        "建設業": "construction building",
+        "不動産業": "real estate building",
+        "医薬品製造業": "pharmaceutical medicine",
+        "医療業": "hospital medical",
+        "食料品製造業": "food manufacturing",
+        "飲食サービス業": "restaurant dining",
+        "機械器具製造業": "industrial machinery",
+        "電気機械器具製造業": "electronics manufacturing",
+        "化学工業": "chemistry laboratory",
+        "広告・マーケティング業": "marketing advertising",
+        "人材サービス業": "human resources office",
+        "教育・学習支援業": "education school",
+        "その他金融業": "finance investment",
+        "銀行業": "banking finance",
+        "小売業": "retail shopping",
+        "卸売業": "warehouse logistics",
+        "運輸業": "transportation logistics",
+        "廃棄物処理業": "recycling environment",
+        "木材・木製品製造業": "wood timber",
+        "繊維工業": "textile fabric",
+        "娯楽業": "entertainment gaming",
+        "警備・メンテナンス業": "security maintenance",
+        "宿泊業": "hotel hospitality",
+        "自動車・同附属品製造業": "automotive car",
+        "電気・ガス・熱供給・水道業": "energy power",
+        "介護・社会福祉業": "healthcare elderly",
+        "消防・防災設備業": "fire safety",
+        "鉄鋼業": "steel manufacturing",
+        "非鉄金属製造業": "metal mining",
+        "農業": "agriculture farming",
+        "保険業": "insurance business",
+        "証券・商品先物取引業": "stock market trading",
+    }
+    query = INDUSTRY_QUERY.get(industry, "business corporate")
+    try:
+        headers = {"Authorization": PEXELS_API_KEY}
+        params = {"query": query, "per_page": 15, "page": 1}
+        r = requests.get("https://api.pexels.com/v1/search", headers=headers, params=params, timeout=10)
+        if r.status_code == 200:
+            photos = r.json().get("photos", [])
+            if photos:
+                idx = seed % len(photos)
+                return photos[idx].get("src", {}).get("medium", "")
+    except Exception as e:
+        print(f"  Pexels image error: {e}")
     return ""
 
 # ======================
