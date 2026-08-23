@@ -1,15 +1,20 @@
 ---
 title: "【サービス業（他に分類されないもの）】1週間のM&A速報まとめ（2026年8月17日〜2026年8月21日）"
-date: 2026-08-23 01:42:21 +0900
+date: 2026-08-23 08:39:47 +0900
 layout: post
 industry: "サービス業（他に分類されないもの）"
 rank: 1
-image: "https://images.pexels.com/photos/32763771/pexels-photo-32763771.jpeg?auto=compress&cs=tinysrgb&h=350"
+image: "https://images.pexels.com/photos/5647560/pexels-photo-5647560.jpeg?auto=compress&cs=tinysrgb&h=350"
 summary: ""
 parent: "2026-08-23-morning-ma-news"
 ---
 
-2026年8月17日〜2026年8月21日のM&A速報について、J-MATシニアアナリストとして分析します。今週は8件の買収案件と1件の事業譲渡案件が発表されました。特に日本創発グループが同週に2件の買収を発表した点、リビングプラ
+## 案件概要
+
+2026年8月17日から8月21日までの期間に発表された主なM&A案件は以下の通りです。
+
+*   **日本創発グループ＜7814＞による脇田コウキ製本の子会社化**
+    *   買い手：日本創発グループ株式会社＜7814
 
 
 [📄 公式リリースを読む](https://maonline.jp/news/summary20260822)
