@@ -1,0 +1,20 @@
+---
+title: "【食料品製造業】ANAホールディングス＜9202＞、コメ・食品雑貨店のAKOMEYA TOKYOを子会社化"
+date: 2026-09-17 04:20:49 +0900
+layout: post
+industry: "食料品製造業"
+rank: 4
+image: "https://images.pexels.com/photos/5953758/pexels-photo-5953758.jpeg?auto=compress&cs=tinysrgb&h=350"
+summary: ""
+parent: "2026-09-17-morning-ma-news"
+---
+
+## 案件概要
+
+ANAホールディングス株式会社（証券コード：9202）は、子会社である全日空商事株式会社を通じて、コメ・食品雑貨店を展開するAKOMEYA TOKYO（東京都渋谷区）の全株式を取得し、子会社化することを決定しました。
+
+*   **買い手**: ANAホールディングス株式会社（証
+
+
+[📄 公式リリースを読む](https://maonline.jp/news/20260915e)
+
